@@ -47,7 +47,7 @@ def import_tag_groups(file: UploadFile):
         "groups": [g["id"] for g in groups],
     }
 
-@router.get("")
+@router.get("/")
 def list_tag_groups():
     """
     List all tag groups in display order.

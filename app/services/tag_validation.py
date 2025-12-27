@@ -23,6 +23,13 @@ def validate_tag_assignment(content_id: str, tag_ids: List[str]):
         tag_ids,
     ).fetchall()
 
+    if len(rows) != len(tag_ids):
+        found_ids = {r[0] for r in rows}
+        missing = [t for t in tag_ids if t not in found_ids]
+        raise TagValidationError(
+            f"Unknown tag(s): {', '.join(missing)}"
+        )
+    
     tag_to_group = {r[0]: r[1] for r in rows}
 
     # Count incoming tags per group
@@ -59,7 +66,9 @@ def validate_tag_assignment(content_id: str, tag_ids: List[str]):
                 f"group '{group_id}' requires at least {min_c} tags"
             )
 
-        if max_c != -1 and total > max_c:
+        # if max_c != -1 and total > max_c:
+        if max_c is not None and total > max_c:
+
             violations.append(
                 f"group '{group_id}' allows at most {max_c} tags"
             )

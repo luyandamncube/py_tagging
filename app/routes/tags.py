@@ -94,35 +94,27 @@ def assign_tags(payload: AssignTags):
         con.execute("BEGIN")
 
         for tag_id in payload.tag_ids:
-            # Idempotent content-tag assignment
-            con.execute(
+            rows = con.execute(
                 """
-                INSERT OR IGNORE INTO content_tag (
-                    content_id,
-                    tag_id
-                )
+                INSERT OR IGNORE INTO content_tag (content_id, tag_id)
                 VALUES (?, ?)
+                RETURNING tag_id
                 """,
-                (
-                    payload.content_id,
-                    tag_id,
-                ),
-            )
+                (payload.content_id, tag_id),
+            ).fetchall()
 
-            # Update tag usage metadata
-            con.execute(
-                """
-                UPDATE tag
-                SET
-                    usage_count = usage_count + 1,
-                    last_used = ?
-                WHERE id = ?
-                """,
-                (
-                    now,
-                    tag_id,
-                ),
-            )
+            # Only update usage if the assignment was new
+            if rows:
+                con.execute(
+                    """
+                    UPDATE tag
+                    SET usage_count = usage_count + 1,
+                        last_used = ?
+                    WHERE id = ?
+                    """,
+                    (now, tag_id),
+                )
+
 
         con.execute("COMMIT")
 
@@ -137,6 +129,46 @@ def assign_tags(payload: AssignTags):
         "status": "ok",
         "content_id": payload.content_id,
         "assigned": payload.tag_ids,
+    }
+
+@router.post("/unassign")
+def unassign_tags(payload: AssignTags):
+    con = get_db()
+
+    try:
+        con.execute("BEGIN")
+
+        for tag_id in payload.tag_ids:
+            con.execute(
+                """
+                DELETE FROM content_tag
+                WHERE content_id = ? AND tag_id = ?
+                """,
+                (payload.content_id, tag_id),
+            )
+
+            con.execute(
+                """
+                UPDATE tag
+                SET usage_count = GREATEST(usage_count - 1, 0)
+                WHERE id = ?
+                """,
+                (tag_id,),
+            )
+
+        con.execute("COMMIT")
+
+    except Exception as e:
+        con.execute("ROLLBACK")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to unassign tags: {e}",
+        )
+
+    return {
+        "status": "ok",
+        "content_id": payload.content_id,
+        "removed": payload.tag_ids,
     }
 
 
@@ -160,3 +192,34 @@ def ensure_tag_endpoint(payload: EnsureTagRequest):
         group_id=payload.group_id,
         label=payload.label,
     )
+
+@router.get("/{group_id}")
+def get_tags_by_group(group_id: str):
+    """
+    Debug endpoint: list all tags in a given group.
+    """
+    con = get_db()
+
+    rows = con.execute(
+        """
+        SELECT
+            id,
+            label,
+            usage_count,
+            last_used
+        FROM tag
+        WHERE group_id = ?
+        ORDER BY usage_count DESC, label
+        """,
+        (group_id,),
+    ).fetchall()
+
+    return [
+        {
+            "id": r[0],
+            "label": r[1],
+            "usage_count": r[2],
+            "last_used": r[3],
+        }
+        for r in rows
+    ]

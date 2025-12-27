@@ -2,6 +2,9 @@ from app.db import get_db
 
 
 def search_tags(group_id: str, query: str | None, limit: int = 10):
+    q = query.lower()
+    max_distance = max(2, len(q) // 2)
+
     con = get_db()
 
     # ------------------------------------
@@ -57,6 +60,13 @@ def search_tags(group_id: str, query: str | None, limit: int = 10):
             ) AS distance
         FROM tag
         WHERE group_id = ?
+        AND (
+            lower(label) LIKE ?
+            OR editdist3(
+                replace(lower(label), ' ', '_'),
+                ?
+            ) <= ?
+        )
         ORDER BY
             prefix_match DESC,
             distance ASC,
@@ -68,9 +78,13 @@ def search_tags(group_id: str, query: str | None, limit: int = 10):
             f"{q}%",
             q,
             group_id,
+            f"{q}%",
+            q,
+            max_distance,
             limit,
         ),
     ).fetchall()
+
 
     return [
         {

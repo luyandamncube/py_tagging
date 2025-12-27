@@ -9,8 +9,8 @@ services:
     volumes:
       - ./data:/app/data:Z
     restart: unless-stopped
-    environment:
-      - DB_RESET=true
+    # environment:
+    #   - DB_RESET=true
 
   ui:
     build:

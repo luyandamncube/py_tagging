@@ -40,7 +40,7 @@ def validate_content(content_id: str):
             status = "missing"
             if required:
                 missing_required += 1
-        elif max_c != -1 and count > max_c:
+        elif max_c is not None and count > max_c:
             status = "over_limit"
             over_limit += 1
         else:
