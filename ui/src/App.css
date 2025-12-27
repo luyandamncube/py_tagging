@@ -1,0 +1,15 @@
+.app {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 100vh;
+}
+
+.left {
+  padding: 16px;
+  background: #f7f7f7;
+}
+
+.right {
+  padding: 16px;
+  overflow-y: auto;
+}
