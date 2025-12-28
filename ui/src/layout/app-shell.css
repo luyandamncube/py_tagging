@@ -1,0 +1,23 @@
+.mobile-header {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    height: 56px;
+    padding: 0 16px;
+    background: #0f0f0f;
+    border-bottom: 1px solid #222;
+  }
+
+  .mobile-brand {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+}

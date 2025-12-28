@@ -1,12 +1,15 @@
 import { useState, useMemo, useEffect } from "react";
-import BulkTagSelector from "../components/tags/BulkTagSelector";
+import { useOutletContext } from "react-router-dom";
+
+import TagsPanel from "../components/tags/TagsPanel";
 import { useTagGroupsWithTags } from "../hooks/useTagGroupsWithTags";
 import { ensureTag } from "../api/tags";
+import "./bulk-intake.css";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
-const LINE_HEIGHT = 22;
+const LINE_HEIGHT = 24;
 
 type LineStatus = "ok" | "error" | "duplicate-db" | "empty";
 
@@ -16,7 +19,13 @@ type LineValidation = {
   reason?: string;
 };
 
+type LayoutContext = {
+  setRightPanel: (node: React.ReactNode) => void;
+};
+
 export default function BulkIntakePage() {
+  const { setRightPanel } = useOutletContext<LayoutContext>();
+
   const [text, setText] = useState("");
   const [site, setSite] = useState("");
   const [creator, setCreator] = useState("");
@@ -25,110 +34,136 @@ export default function BulkIntakePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [dbDuplicates, setDbDuplicates] = useState<Set<string>>(new Set());
-//   const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
- const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [checkingDb, setCheckingDb] = useState(false);
 
-  // -----------------------------
-  // Load tag groups + tags
-  // -----------------------------
-    const {
+  const {
     groups: tagGroups,
     loading: tagsLoading,
     error: tagsError,
     reload: reloadTags,
-    } = useTagGroupsWithTags();
+  } = useTagGroupsWithTags();
 
+  // --------------------------------------------------
+  // Tag handlers (must be defined before useEffect)
+  // --------------------------------------------------
 
-  // -----------------------------
-  // Parse + validate lines
-  // -----------------------------
-const lines = useMemo<LineValidation[]>(() => {
-  const seen = new Set<string>();
+  function toggleTag(tagId: string) {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId)
+        ? prev.filter((id) => id !== tagId)
+        : [...prev, tagId]
+    );
+  }
 
-  return text.split("\n").map((raw) => {
-    const url = raw.trim();
+  const handleCreateTag = async (groupId: string, label: string) => {
+    await ensureTag(groupId, label);
+    reloadTags();
+  };
 
-    if (!url) {
-      return { url: "", status: "empty" };
-    }
+  // --------------------------------------------------
+  // URL parsing / validation
+  // --------------------------------------------------
 
-    if (!/^https?:\/\//i.test(url)) {
-      return { url, status: "error", reason: "Invalid URL" };
-    }
+  const lines = useMemo<LineValidation[]>(() => {
+    const seen = new Set<string>();
 
-    if (seen.has(url)) {
-      return { url, status: "error", reason: "Duplicate in list" };
-    }
+    return text.split("\n").map((raw) => {
+      const url = raw.trim();
 
-    seen.add(url);
+      if (!url) return { url: "", status: "empty" };
+      if (!/^https?:\/\//i.test(url))
+        return { url, status: "error", reason: "Invalid URL" };
+      if (seen.has(url))
+        return { url, status: "error", reason: "Duplicate in list" };
 
-    if (checkingDb) {
-      return { url, status: "ok", reason: "Checking…" };
-    }
+      seen.add(url);
 
-    if (dbDuplicates.has(url)) {
-      return { url, status: "duplicate-db", reason: "Already exists" };
-    }
+      if (checkingDb)
+        return { url, status: "ok", reason: "Checking…" };
+      if (dbDuplicates.has(url))
+        return { url, status: "duplicate-db", reason: "Already exists" };
 
-    return { url, status: "ok" };
-  });
-}, [text, dbDuplicates, checkingDb]);
+      return { url, status: "ok" };
+    });
+  }, [text, dbDuplicates, checkingDb]);
 
   const validUrls = lines.filter((l) => l.status === "ok");
-
   const invalidCount = lines.filter(
     (l) => l.status === "error" || l.status === "duplicate-db"
   ).length;
 
-  // -----------------------------
-  // DB duplicate checker
-  // -----------------------------
-    useEffect(() => {
+  // --------------------------------------------------
+  // DB duplicate check
+  // --------------------------------------------------
+
+  useEffect(() => {
     const urls = Array.from(
-        new Set(
+      new Set(
         text
-            .split("\n")
-            .map(l => l.trim())
-            .filter(l => /^https?:\/\//i.test(l))
-        )
+          .split("\n")
+          .map((l) => l.trim())
+          .filter((l) => /^https?:\/\//i.test(l))
+      )
     );
 
-    if (urls.length === 0) {
-        setDbDuplicates(new Set());
-        return;
+    if (!urls.length) {
+      setDbDuplicates(new Set());
+      return;
     }
 
     setCheckingDb(true);
-
     const timeout = setTimeout(async () => {
-        const dupes = await checkDbDuplicates(urls);
-        setDbDuplicates(dupes);
-        setCheckingDb(false);
+      const res = await fetch(`${API_BASE}/content/check-duplicates`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setDbDuplicates(new Set<string>(data.existing));
+      }
+
+      setCheckingDb(false);
     }, 400);
 
     return () => clearTimeout(timeout);
-    }, [text]);
+  }, [text]);
 
-  async function checkDbDuplicates(urls: string[]) {
-    const res = await fetch(`${API_BASE}/content/check-duplicates`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ urls }),
-    });
+  // --------------------------------------------------
+  // Right panel wiring (desktop only)
+  // --------------------------------------------------
 
-    if (!res.ok) return new Set<string>();
+    useEffect(() => {
+      setRightPanel(
+        <TagsPanel
+          groups={tagGroups}
+          loading={tagsLoading}
+          selectedTagIds={selectedTagIds}
+          onToggleTag={toggleTag}
+          onCreateTag={handleCreateTag}
+        />
+      );
+    }, [
+      setRightPanel,
+      tagGroups,
+      tagsLoading,
+      selectedTagIds,
+    ]);
 
-    const data = await res.json();
-    return new Set<string>(data.existing);
-  }
+  useEffect(() => {
+    return () => {
+      setRightPanel(null);
+    };
+  }, [setRightPanel]);
 
-  // -----------------------------
+  // --------------------------------------------------
   // Submit
-  // -----------------------------
+  // --------------------------------------------------
+
   async function handleSubmit() {
-    if (validUrls.length === 0 || invalidCount > 0) return;
+    if (!validUrls.length || invalidCount > 0) return;
 
     setLoading(true);
     setResult(null);
@@ -142,190 +177,124 @@ const lines = useMemo<LineValidation[]>(() => {
     }));
 
     try {
-      console.log("Submitting items:", items);
-
       const res = await fetch(`${API_BASE}/content/bulk`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),
       });
 
-      if (!res.ok) {
-        setResult("❌ Failed to add items");
-        return;
-      }
+      if (!res.ok) throw new Error();
 
       const data = await res.json();
       setResult(`✅ Added ${data.created} items`);
-
-      // reset
       setText("");
       setDbDuplicates(new Set());
-      // setSelectedTagIds(new Set());
       setSelectedTagIds([]);
     } catch {
-      setResult("❌ Request failed");
+      setResult("❌ Failed to add items");
     } finally {
       setLoading(false);
     }
   }
-  function toggleTag(tagId: string) {
-    setSelectedTagIds((prev) =>
-      prev.includes(tagId)
-        ? prev.filter((id) => id !== tagId)
-        : [...prev, tagId]
-    );
-  }
 
-
-  // -----------------------------
+  // --------------------------------------------------
   // Render
-  // -----------------------------
+  // --------------------------------------------------
+
   return (
-    <div style={{ padding: 24, maxWidth: 900 }}>
-      <h2>Bulk URL Intake</h2>
+    <div className="page">
+      <header className="page-header">
+        <h1>Bulk URL Intake</h1>
+        <p>Add multiple items and apply shared metadata & tags.</p>
+      </header>
 
-      {/* Shared metadata */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-        <input
-          placeholder="Site"
-          value={site}
-          onChange={(e) => setSite(e.target.value)}
-          style={{ flex: 1 }}
-        />
-        <input
-          placeholder="Creator"
-          value={creator}
-          onChange={(e) => setCreator(e.target.value)}
-          style={{ flex: 1 }}
-        />
-        <select value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="image">Image</option>
-          <option value="video">Video</option>
-        </select>
-      </div>
+      {/* Metadata */}
+      <section className="card">
+        <div className="form-row">
+          <div className="form-field">
+            <label>Site</label>
+            <input value={site} onChange={(e) => setSite(e.target.value)} />
+          </div>
+          <div className="form-field">
+            <label>Creator</label>
+            <input
+              value={creator}
+              onChange={(e) => setCreator(e.target.value)}
+            />
+          </div>
+          <div className="form-field">
+            <label>Type</label>
+            <select value={type} onChange={(e) => setType(e.target.value)}>
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
+          </div>
+        </div>
+      </section>
 
-      {/* URL editor */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "24px 1fr 180px",
-          border: "2px solid #fff",
-          borderRadius: 6,
-          background: "#3a3a3a",
-          color: "#fff",
-          fontFamily: "monospace",
-          maxHeight: 300,
-          overflow: "auto",
-        }}
-      >
-        {/* Left */}
-        <div>
-          {lines.map((l, i) => (
-            <div
-              key={i}
-              style={{
-                height: LINE_HEIGHT,
-                lineHeight: `${LINE_HEIGHT}px`,
-                textAlign: "center",
-                color:
-                    l.status === "ok" && !l.reason
-                        ? "#4caf50"
-                        : l.status === "duplicate-db"
-                        ? "#ffb300"
-                        : l.status === "error"
-                        ? "#e53935"
-                        : "#999",
-
-              }}
-            >
-              {l.reason === "Checking…" ? "…" :
-                l.status === "ok" ? "✔" :
-                l.status === "duplicate-db" ? "⚠" :
-                l.status === "error" ? "✖" : ""}
-
-            </div>
-          ))}
+      {/* URLs */}
+      <section className="card">
+        <div className="card-header">
+          <span>URLs</span>
+          <span className="hint">One per line · live validation</span>
         </div>
 
-        {/* Middle */}
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          spellCheck={false}
-          style={{
-            border: "none",
-            outline: "none",
-            resize: "none",
-            padding: "0px 10px",
-            background: "transparent",
-            color: "#fff",
-            width: "100%",
-            minHeight: 300,
-            lineHeight: `${LINE_HEIGHT}px`,
-            fontSize: 14,
-          }}
-        />
+        <div className="url-editor">
+          <div className="url-status">
+            {lines.map((l, i) => (
+              <div
+                key={i}
+                className={`status ${l.status}`}
+                style={{ height: LINE_HEIGHT }}
+              />
+            ))}
+          </div>
 
-        {/* Right */}
-        <div style={{ padding: "0px 8px" }}>
-          {lines.map((l, i) => (
-            <div
-              key={i}
-              style={{
-                height: LINE_HEIGHT,
-                lineHeight: `${LINE_HEIGHT}px`,
-                fontSize: 12,
-                color: "#e57373",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {l.reason || ""}
-            </div>
-          ))}
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            spellCheck={false}
+          />
+
+          <div className="url-reasons">
+            {lines.map((l, i) => (
+              <div key={i} style={{ height: LINE_HEIGHT }}>
+                {l.reason}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Summary */}
-      {lines.length > 0 && (
-        <div style={{ fontSize: 13, marginTop: 8 }}>
-          Valid: {validUrls.length} &nbsp;|&nbsp; Invalid: {invalidCount}
+      {/* Mobile-only tags */}
+      <section className="card">
+        <div className="tags-inline">
+          <TagsPanel
+            groups={tagGroups}
+            loading={tagsLoading}
+            selectedTagIds={selectedTagIds}
+            onToggleTag={toggleTag}
+            onCreateTag={handleCreateTag}
+          />
         </div>
-      )}
+      </section>
+      {/* Actions */}
+      <footer className="page-actions">
+        <div className="summary">
+          Valid {validUrls.length} · Invalid {invalidCount}
+        </div>
 
-      {tagsError && <div style={{ color: "red" }}>{tagsError}</div>}
+        <button
+          className="primary"
+          onClick={handleSubmit}
+          disabled={loading || !validUrls.length || invalidCount > 0}
+        >
+          {loading ? "Adding…" : "Add URLs"}
+        </button>
+      </footer>
 
-        <BulkTagSelector
-        groups={tagGroups}
-        loading={tagsLoading}
-        selectedTagIds={selectedTagIds}
-        onToggleTag={toggleTag}
-        onCreateTag={async (groupId, label) => {
-            await ensureTag(groupId, label);
-            reloadTags();
-        }}
-        />
-
-
-
-      <button
-        onClick={handleSubmit}
-        disabled={loading || validUrls.length === 0 || invalidCount > 0}
-        style={{
-          marginTop: 16,
-          padding: "10px 14px",
-          fontWeight: 600,
-          cursor: loading ? "not-allowed" : "pointer",
-        }}
-      >
-        {loading ? "Adding…" : "Add URLs"}
-      </button>
-
-      {result && (
-        <div style={{ marginTop: 12, fontSize: 14 }}>{result}</div>
-      )}
+      {result && <div className="result">{result}</div>}
+      {tagsError && <div className="error">{tagsError}</div>}
     </div>
   );
 }

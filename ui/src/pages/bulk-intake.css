@@ -1,0 +1,124 @@
+.page {
+  max-width: 1100px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.page-header p {
+  color: #888;
+  margin-top: 4px;
+}
+
+.card {
+  background: #1a1a1a;
+  border: 1px solid #262626;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 8px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr;
+  gap: 12px;
+}
+
+.form-field label {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.form-field input,
+.form-field select {
+  width: 100%;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 8px;
+  color: #eee;
+}
+
+.url-editor {
+  display: grid;
+  grid-template-columns: 12px 1fr 180px;
+  background: #222;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.url-status .status {
+  width: 8px;
+  margin: auto;
+}
+
+.status.ok {
+  background: #4caf50;
+}
+
+.status.error {
+  background: #e53935;
+}
+
+.status.duplicate-db {
+  background: #ffb300;
+}
+
+textarea {
+  background: transparent;
+  border: none;
+  color: #fff;
+  padding: 8px;
+  resize: none;
+  font-family: monospace;
+  outline: none;
+}
+
+.url-reasons {
+  font-size: 12px;
+  color: #e57373;
+  padding: 4px;
+}
+
+.page-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+button.primary {
+  background: #4caf50;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 600;
+}
+
+.result {
+  margin-top: 12px;
+}
+
+/* Inline tags hidden on desktop */
+.tags-inline {
+  display: none;
+}
+
+/* Mobile: show tags inline below URLs */
+@media (max-width: 900px) {
+  .tags-inline {
+    display: block;
+    margin-top: 24px;
+  }
+}

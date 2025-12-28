@@ -17,7 +17,7 @@ export default function BulkTagSelector({
   onToggleTag,
   onCreateTag,
 }: Props) {
-  
+
   const [open, setOpen] = useState(false);
   // console.log(
   //   "[BulkTagSelector render]",
@@ -45,10 +45,10 @@ export default function BulkTagSelector({
   }
 
   return (
-    <div style={{ marginTop: 24 }}>
+    <div style={{ marginTop: 8 }}>
       <button
+        className="tag-action-btn"
         onClick={() => setOpen((o) => !o)}
-        style={{ fontWeight: 600 }}
       >
         {open ? "Hide tags" : "Add tags"}
       </button>
@@ -72,4 +72,5 @@ export default function BulkTagSelector({
       )}
     </div>
   );
+
 }

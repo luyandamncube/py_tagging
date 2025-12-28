@@ -1,0 +1,7 @@
+.right-panel {
+  width: 340px;
+  padding: 24px;
+  border-left: 1px solid #222;
+  background: #0f0f0f;
+  overflow-y: auto;
+}

@@ -2,7 +2,8 @@
 import "../App.css";
 
 import ContentPreview from "../components/ContentPreview";
-import TagGroupSection from "../components/TagGroupSection";
+// import TagGroupSection from "../components/TagGroupSection";
+import TagGroupSection from "../components/tags/TagGroupSection";
 import ValidationBanner from "../components/ValidationBanner";
 import TagGroup from "../components/TagGroup";
 

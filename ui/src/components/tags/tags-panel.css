@@ -1,0 +1,12 @@
+.tags-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tags-panel-header {
+  display: flex;
+  justify-content: space-between;
+  color: #aaa;
+  font-size: 13px;
+}
