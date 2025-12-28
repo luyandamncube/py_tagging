@@ -20,12 +20,67 @@ def create_content(payload: ContentCreate):
 
     return {"id": content_id}
 
+@router.get("/next")
+def get_next_content():
+    con = get_db()
+
+    row = con.execute(
+        """
+        SELECT
+            id,
+            url,
+            site,
+            creator,
+            type,
+            created_at
+        FROM content
+        WHERE status != 'complete'
+        ORDER BY created_at
+        LIMIT 1
+        """
+    ).fetchone()
+
+    if not row:
+        return None
+
+    return {
+        "id": row[0],
+        "url": row[1],
+        "site": row[2],
+        "creator": row[3],
+        "type": row[4],
+        "created_at": row[5],
+    }
+
+@router.post("/{content_id}/complete")
+# @router.post("/{content_id}/complete/")
+def complete_content(content_id: str):
+    con = get_db()
+
+    res = con.execute(
+        """
+        UPDATE content
+        SET status = 'complete'
+        WHERE id = ?
+        """,
+        (content_id,),
+    )
+
+    if res.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Content not found")
+
+    return {
+        "status": "ok",
+        "content_id": content_id,
+    }
+
 @router.get("/{content_id}/validation")
 def get_content_validation(content_id: str):
     """
     Return tag-group validation status for a content item.
     """
     return validate_content(content_id)
+
 
 @router.get("/{content_id}")
 def get_content(content_id: str):
@@ -35,3 +90,89 @@ def get_content(content_id: str):
         raise HTTPException(status_code=404, detail="Content not found")
 
     return snapshot
+
+from uuid import uuid4
+from fastapi import HTTPException
+
+@router.post("/bulk")
+def create_content_bulk(payload: dict):
+    items = payload.get("items", [])
+    if not items:
+        raise HTTPException(status_code=400, detail="No items provided")
+
+    con = get_db()
+    created = []
+    skipped = []
+
+    for item in items:
+        content_id = str(uuid4())
+        tag_ids = item.get("tag_ids", [])
+
+        try:
+            # 1️⃣ Insert content
+            con.execute(
+                """
+                INSERT INTO content (
+                    id,
+                    url,
+                    site,
+                    creator,
+                    type,
+                    created_at
+                )
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """,
+                (
+                    content_id,
+                    item["url"],
+                    item.get("site"),
+                    item.get("creator"),
+                    item.get("type", "image"),
+                ),
+            )
+
+            # 2️⃣ Insert content ↔ tag relations
+            for tag_id in tag_ids:
+                con.execute(
+                    """
+                    INSERT OR IGNORE INTO content_tag (
+                        content_id,
+                        tag_id
+                    )
+                    VALUES (?, ?)
+                    """,
+                    (content_id, tag_id),
+                )
+
+            created.append(content_id)
+
+        except Exception:
+            # UNIQUE violation on content.url ends here
+            skipped.append(item["url"])
+
+    return {
+        "created": len(created),
+        "skipped": len(skipped),
+        "skipped_urls": skipped,
+    }
+
+@router.post("/check-duplicates")
+def check_duplicates(payload: dict):
+    urls = payload.get("urls", [])
+    if not urls:
+        return {"existing": []}
+
+    con = get_db()
+
+    rows = con.execute(
+        f"""
+        SELECT url
+        FROM content
+        WHERE url IN ({",".join("?" * len(urls))})
+        """,
+        urls,
+    ).fetchall()
+
+    return {
+        "existing": [r[0] for r in rows]
+    }

@@ -79,3 +79,70 @@ def list_tag_groups():
         }
         for r in rows
     ]
+
+@router.get("/with-tags")
+def list_tag_groups_with_tags():
+    con = get_db()
+
+    rows = con.execute(
+        """
+        SELECT
+            tg.id            AS group_id,
+            tg.description,
+            tg.required,
+            tg.min_count,
+            tg.max_count,
+            tg.position,
+
+            t.id             AS tag_id,
+            t.label,
+            t.usage_count,
+            t.last_used
+
+        FROM tag_group tg
+        LEFT JOIN tag t
+          ON t.group_id = tg.id
+
+        ORDER BY
+            tg.position ASC,
+            t.usage_count DESC NULLS LAST,
+            t.label ASC
+        """
+    ).fetchall()
+
+    groups = {}
+    
+    for (
+        group_id,
+        description,
+        required,
+        min_count,
+        max_count,
+        position,
+        tag_id,
+        label,
+        usage_count,
+        last_used,
+    ) in rows:
+
+        if group_id not in groups:
+            groups[group_id] = {
+                "id": group_id,
+                "description": description,
+                "required": required,
+                "min": min_count,
+                "max": max_count,
+                "position": position,
+                "tags": [],
+            }
+
+        if tag_id:
+            groups[group_id]["tags"].append({
+                "id": tag_id,
+                "label": label,
+                "usage_count": usage_count,
+                "last_used": last_used,
+            })
+
+    return list(groups.values())
+

@@ -9,8 +9,8 @@ services:
     volumes:
       - ./data:/app/data:Z
     restart: unless-stopped
-    # environment:
-    #   - DB_RESET=true
+    environment:
+      - DB_RESET=true
 
   ui:
     build:
@@ -18,7 +18,7 @@ services:
     container_name: picvid-tags-ui
     ports:
       - "3000:5173"
-    environment:
-      - VITE_API_BASE=http://localhost:8000
-    depends_on:
-      - api
+    volumes:
+      - ./ui:/app
+      - /app/node_modules
+    command: npm run dev -- --host

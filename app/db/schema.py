@@ -21,8 +21,14 @@ def init_schema(con):
             site TEXT,
             creator TEXT,
             type TEXT,
+            status TEXT DEFAULT 'new',
             created_at TIMESTAMP
         )
+    """)
+
+    con.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_content_url
+        ON content(url);
     """)
 
     # -------------------------

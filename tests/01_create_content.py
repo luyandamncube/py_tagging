@@ -14,6 +14,7 @@ API_BASE = "http://localhost:8000"
 
 
 def main():
+    # post 1
     payload = {
         "url": "https://example.com/test.jpg",
         "site": "example",
@@ -34,6 +35,25 @@ def main():
     print("\n✅ Content created")
     print(json.dumps(data, indent=2))
 
+    # post 2 
+    payload = {
+        "url": "https://example.com/test2.jpg",
+        "site": "example2",
+        "creator": "tester2",
+        "type": "image",
+    }
 
+    url = f"{API_BASE}/content/"
+
+    print(f"🚀 POST {url}")
+    print(json.dumps(payload, indent=2))
+
+    resp = requests.post(url, json=payload)
+    resp.raise_for_status()
+
+    data = resp.json()
+
+    print("\n✅ Content created")
+    print(json.dumps(data, indent=2))
 if __name__ == "__main__":
     main()

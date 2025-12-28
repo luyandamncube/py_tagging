@@ -1,0 +1,193 @@
+luyanda@LUYANDA-PC:~$ tree py_tagging -L 3
+py_tagging
+├── Dockerfile
+├── README.md
+├── app
+│   ├── db
+│   │   ├── __init__.py
+│   │   ├── db.py
+│   │   └── schema.py
+│   ├── main.py
+│   ├── routes
+│   │   ├── content.py
+│   │   ├── debug.py
+│   │   ├── export.py
+│   │   ├── tag_groups.py
+│   │   └── tags.py
+│   ├── schemas.py
+│   └── services
+│       ├── content_snapshot.py
+│       ├── content_validation.py
+│       ├── tag_ensure.py
+│       ├── tag_search.py
+│       ├── tag_validation.py
+│       ├── taggroup_loader.py
+│       └── taggroups.py
+├── data
+│   ├── exports
+│   │   └── content.parquet
+│   ├── live.duckdb
+│   └── live.duckdb.wal
+├── docker-compose.yml
+├── requirements.txt
+├── scripts
+├── tests
+│   ├── 01_create_content.py
+│   ├── 01_create_content_bulk.py
+│   ├── 02_get_content.py
+│   ├── 03_create_tag.py
+│   ├── 04_assign_tag.py
+│   ├── 05_export_parquet.py
+│   ├── 10_import_taggroups.py
+│   ├── 11_get_taggroups.py
+│   ├── 12_assign_invalid_tags.py
+│   ├── 13_get_content_validation.py
+│   ├── 15_get_content_snapshot.py
+│   ├── 16_search_tags.py
+│   └── 17_ensure_tag.py
+└── ui
+    ├── Dockerfile
+    ├── README.md
+    ├── eslint.config.js
+    ├── index.html
+    ├── node_modules
+    │   ├── @babel
+    │   ├── @esbuild
+    │   ├── @eslint
+    │   ├── @eslint-community
+    │   ├── @humanfs
+    │   ├── @humanwhocodes
+    │   ├── @jridgewell
+    │   ├── @rolldown
+    │   ├── @rollup
+    │   ├── @types
+    │   ├── @typescript-eslint
+    │   ├── @vitejs
+    │   ├── acorn
+    │   ├── acorn-jsx
+    │   ├── ajv
+    │   ├── ansi-styles
+    │   ├── argparse
+    │   ├── balanced-match
+    │   ├── baseline-browser-mapping
+    │   ├── brace-expansion
+    │   ├── browserslist
+    │   ├── callsites
+    │   ├── caniuse-lite
+    │   ├── chalk
+    │   ├── color-convert
+    │   ├── color-name
+    │   ├── concat-map
+    │   ├── convert-source-map
+    │   ├── cross-spawn
+    │   ├── csstype
+    │   ├── debug
+    │   ├── deep-is
+    │   ├── electron-to-chromium
+    │   ├── esbuild
+    │   ├── escalade
+    │   ├── escape-string-regexp
+    │   ├── eslint
+    │   ├── eslint-plugin-react-hooks
+    │   ├── eslint-plugin-react-refresh
+    │   ├── eslint-scope
+    │   ├── eslint-visitor-keys
+    │   ├── espree
+    │   ├── esquery
+    │   ├── esrecurse
+    │   ├── estraverse
+    │   ├── esutils
+    │   ├── fast-deep-equal
+    │   ├── fast-json-stable-stringify
+    │   ├── fast-levenshtein
+    │   ├── fdir
+    │   ├── file-entry-cache
+    │   ├── find-up
+    │   ├── flat-cache
+    │   ├── flatted
+    │   ├── gensync
+    │   ├── glob-parent
+    │   ├── globals
+    │   ├── has-flag
+    │   ├── hermes-estree
+    │   ├── hermes-parser
+    │   ├── ignore
+    │   ├── import-fresh
+    │   ├── imurmurhash
+    │   ├── is-extglob
+    │   ├── is-glob
+    │   ├── isexe
+    │   ├── js-tokens
+    │   ├── js-yaml
+    │   ├── jsesc
+    │   ├── json-buffer
+    │   ├── json-schema-traverse
+    │   ├── json-stable-stringify-without-jsonify
+    │   ├── json5
+    │   ├── keyv
+    │   ├── levn
+    │   ├── locate-path
+    │   ├── lodash.merge
+    │   ├── lru-cache
+    │   ├── minimatch
+    │   ├── ms
+    │   ├── nanoid
+    │   ├── natural-compare
+    │   ├── node-releases
+    │   ├── optionator
+    │   ├── p-limit
+    │   ├── p-locate
+    │   ├── parent-module
+    │   ├── path-exists
+    │   ├── path-key
+    │   ├── picocolors
+    │   ├── picomatch
+    │   ├── postcss
+    │   ├── prelude-ls
+    │   ├── punycode
+    │   ├── react
+    │   ├── react-dom
+    │   ├── react-refresh
+    │   ├── resolve-from
+    │   ├── rollup
+    │   ├── scheduler
+    │   ├── semver
+    │   ├── shebang-command
+    │   ├── shebang-regex
+    │   ├── source-map-js
+    │   ├── strip-json-comments
+    │   ├── supports-color
+    │   ├── tinyglobby
+    │   ├── ts-api-utils
+    │   ├── type-check
+    │   ├── typescript
+    │   ├── typescript-eslint
+    │   ├── undici-types
+    │   ├── update-browserslist-db
+    │   ├── uri-js
+    │   ├── vite
+    │   ├── which
+    │   ├── word-wrap
+    │   ├── yallist
+    │   ├── yocto-queue
+    │   ├── zod
+    │   └── zod-validation-error
+    ├── package-lock.json
+    ├── package.json
+    ├── public
+    │   └── vite.svg
+    ├── src
+    │   ├── App.css
+    │   ├── App.tsx
+    │   ├── api
+    │   ├── assets
+    │   ├── components
+    │   ├── hooks
+    │   ├── index.css
+    │   ├── main.tsx
+    │   ├── pages
+    │   └── types
+    ├── tsconfig.app.json
+    ├── tsconfig.json
+    ├── tsconfig.node.json
+    └── vite.config.ts
