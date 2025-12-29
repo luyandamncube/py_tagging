@@ -1,24 +1,31 @@
-from fastapi import APIRouter,HTTPException
+from fastapi import APIRouter, HTTPException
 from uuid import uuid4
 from app.db import get_db
 from app.schemas import ContentCreate
 from app.services.content_validation import validate_content
 from app.services.content_snapshot import get_content_snapshot
 
+from app.db.snapshot import snapshot_db
+from app.services.drive_sync import enqueue_drive_sync
 
 router = APIRouter(prefix="/content", tags=["content"])
+
 
 @router.post("/")
 def create_content(payload: ContentCreate):
     con = get_db()
-    content_id = uuid4()
+    content_id = str(uuid4())
 
-    con.execute("""
+    con.execute(
+        """
         INSERT INTO content (id, url, site, creator, type)
         VALUES (?, ?, ?, ?, ?)
-    """, (content_id, payload.url, payload.site, payload.creator, payload.type))
+        """,
+        (content_id, payload.url, payload.site, payload.creator, payload.type),
+    )
 
     return {"id": content_id}
+
 
 @router.get("/next")
 def get_next_content():
@@ -52,8 +59,8 @@ def get_next_content():
         "created_at": row[5],
     }
 
+
 @router.post("/{content_id}/complete")
-# @router.post("/{content_id}/complete/")
 def complete_content(content_id: str):
     con = get_db()
 
@@ -74,6 +81,7 @@ def complete_content(content_id: str):
         "content_id": content_id,
     }
 
+
 @router.get("/{content_id}/validation")
 def get_content_validation(content_id: str):
     """
@@ -91,8 +99,10 @@ def get_content(content_id: str):
 
     return snapshot
 
-from uuid import uuid4
-from fastapi import HTTPException
+
+# ------------------------------------------------------------------
+# BULK CREATE (with snapshot + async Drive sync)
+# ------------------------------------------------------------------
 
 @router.post("/bulk")
 def create_content_bulk(payload: dict):
@@ -147,14 +157,25 @@ def create_content_bulk(payload: dict):
             created.append(content_id)
 
         except Exception:
-            # UNIQUE violation on content.url ends here
-            skipped.append(item["url"])
+            # Likely UNIQUE violation on content.url
+            skipped.append(item.get("url"))
+
+    # --------------------------------------------------------------
+    # 📸 Snapshot + async Google Drive sync (only if data changed)
+    # --------------------------------------------------------------
+    snapshot_name = None
+    if created:
+        snapshot_path = snapshot_db(con)
+        enqueue_drive_sync(snapshot_path)
+        snapshot_name = snapshot_path.name
 
     return {
         "created": len(created),
         "skipped": len(skipped),
         "skipped_urls": skipped,
+        "snapshot": snapshot_name,
     }
+
 
 @router.post("/check-duplicates")
 def check_duplicates(payload: dict):

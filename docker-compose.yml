@@ -7,10 +7,11 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/app/data:Z
+      - ./data:/app/data
+      - ~/.config/rclone:/root/.config/rclone:ro
     restart: unless-stopped
-    environment:
-      - DB_RESET=true
+    # environment:
+    #   - DB_RESET=true
 
   ui:
     build:
@@ -21,4 +22,5 @@ services:
     volumes:
       - ./ui:/app
       - /app/node_modules
+      - ~/.config/rclone:/root/.config/rclone:ro
     command: npm run dev -- --host
