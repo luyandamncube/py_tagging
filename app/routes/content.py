@@ -6,7 +6,8 @@ from app.services.content_validation import validate_content
 from app.services.content_snapshot import get_content_snapshot
 
 from app.db.snapshot import snapshot_db
-from app.services.drive_sync import enqueue_drive_sync
+from app.services.drive_sync import enqueue_drive_sync, LAST_SYNC_STATUS
+
 
 router = APIRouter(prefix="/content", tags=["content"])
 
@@ -161,19 +162,27 @@ def create_content_bulk(payload: dict):
             skipped.append(item.get("url"))
 
     # --------------------------------------------------------------
-    # 📸 Snapshot + async Google Drive sync (only if data changed)
+    # 📸 Snapshot + async Google Drive sync
     # --------------------------------------------------------------
+    backup_scheduled = False
     snapshot_name = None
+
     if created:
         snapshot_path = snapshot_db(con)
         enqueue_drive_sync(snapshot_path)
+
+        backup_scheduled = True
         snapshot_name = snapshot_path.name
 
     return {
         "created": len(created),
         "skipped": len(skipped),
         "skipped_urls": skipped,
-        "snapshot": snapshot_name,
+        "backup": {
+            "scheduled": backup_scheduled,
+            "snapshot": snapshot_name,
+            "last_sync": LAST_SYNC_STATUS,
+        },
     }
 
 
