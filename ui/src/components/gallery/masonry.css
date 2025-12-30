@@ -1,0 +1,162 @@
+/* ========================= */
+/* Masonry layout            */
+/* ========================= */
+
+.masonry-grid {
+  column-count: 5;
+  column-gap: 16px;
+}
+
+@media (max-width: 1400px) {
+  .masonry-grid { column-count: 4; }
+}
+
+@media (max-width: 1100px) {
+  .masonry-grid { column-count: 3; }
+}
+
+@media (max-width: 700px) {
+  .masonry-grid { column-count: 2; }
+}
+
+/* ========================= */
+/* Masonry items             */
+/* ========================= */
+
+.masonry-item {
+  position: relative;
+  break-inside: avoid;
+  margin-bottom: 16px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #111;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.masonry-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+
+.masonry-item img,
+.masonry-item video {
+  width: 100%;
+  display: block;
+  border-radius: 16px;
+}
+
+/* ========================= */
+/* Hover overlay              */
+/* ========================= */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.35),
+    rgba(0,0,0,0.65)
+  );
+}
+
+.masonry-item:hover .overlay {
+  opacity: 1;
+}
+
+.overlay-top {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.overlay-btn {
+  background: rgba(20,20,20,0.85);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.overlay-btn:hover {
+  background: rgba(40,40,40,0.95);
+}
+
+.overlay-top {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.overlay-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.meta {
+  background: rgba(0,0,0,0.6);
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #fff;
+}
+
+.meta.muted {
+  opacity: 0.75;
+  /* font-size: 12px; */
+}
+
+/* ========================= */
+/* Mobile                     */
+/* ========================= */
+
+@media (max-width: 900px) {
+  .overlay {
+    display: none;
+  }
+}
+
+.tag-pill {
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+
+.tag-pill.muted {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+/* ========================= */
+/* Fallback (broken media)  */
+/* ========================= */
+
+.image-fallback {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: repeating-linear-gradient(
+    45deg,
+    #222,
+    #222 10px,
+    #1a1a1a 10px,
+    #1a1a1a 20px
+  );
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #888;
+  font-size: 13px;
+  text-align: center;
+}

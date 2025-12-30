@@ -7,6 +7,7 @@ type Props = {
   selectedTagIds: string[];
   onToggleTag: (tagId: string) => void;
   onCreateTag: (groupId: string, label: string) => Promise<void>;
+  blockedGroupIds?: Set<string>;
 };
 
 export default function TagsPanel({
@@ -15,7 +16,14 @@ export default function TagsPanel({
   selectedTagIds,
   onToggleTag,
   onCreateTag,
+  blockedGroupIds
 }: Props) {
+  const blocked = blockedGroupIds ?? new Set<string>();
+
+  if (loading) {
+    return <div className="tags-loading">Loading tags…</div>;
+  }
+
   return (
     <section className="tags-panel">
       <div className="tags-panel-header">
@@ -31,6 +39,7 @@ export default function TagsPanel({
         selectedTagIds={selectedTagIds}
         onToggleTag={onToggleTag}
         onCreateTag={onCreateTag}
+        blockedGroupIds={blocked}
       />
     </section>
   );

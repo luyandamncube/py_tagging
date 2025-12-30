@@ -106,6 +106,21 @@ button.primary {
   font-weight: 600;
 }
 
+button.primary.disabled,
+button.primary:disabled {
+  background: #2a2a2a;
+  color: #888;
+  border-color: #333;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+button.primary.disabled:hover,
+button.primary:disabled:hover {
+  background: #2a2a2a;
+}
+
+
 .result {
   margin-top: 12px;
 }

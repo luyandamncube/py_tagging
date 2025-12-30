@@ -1,4 +1,3 @@
-luyanda@LUYANDA-PC:~$ tree py_tagging -L 3
 py_tagging
 ├── Dockerfile
 ├── README.md
@@ -6,7 +5,8 @@ py_tagging
 │   ├── db
 │   │   ├── __init__.py
 │   │   ├── db.py
-│   │   └── schema.py
+│   │   ├── schema.py
+│   │   └── snapshot.py
 │   ├── main.py
 │   ├── routes
 │   │   ├── content.py
@@ -18,19 +18,30 @@ py_tagging
 │   └── services
 │       ├── content_snapshot.py
 │       ├── content_validation.py
+│       ├── drive_sync.py
 │       ├── tag_ensure.py
 │       ├── tag_search.py
 │       ├── tag_validation.py
 │       ├── taggroup_loader.py
 │       └── taggroups.py
 ├── data
+│   ├── backups
+│   │   ├── latest.duckdb
+│   │   ├── live_20251228_234727.duckdb
+│   │   ├── live_20251228_235251.duckdb
+│   │   ├── live_20251228_235400.duckdb
+│   │   ├── live_20251229_000155.duckdb
+│   │   ├── live_20251229_001934.duckdb
+│   │   └── live_20251229_002433.duckdb
 │   ├── exports
 │   │   └── content.parquet
 │   ├── live.duckdb
 │   └── live.duckdb.wal
 ├── docker-compose.yml
+├── project_structure.txt
 ├── requirements.txt
 ├── scripts
+│   └── restore_db.sh
 ├── tests
 │   ├── 01_create_content.py
 │   ├── 01_create_content_bulk.py
@@ -58,6 +69,7 @@ py_tagging
     │   ├── @humanfs
     │   ├── @humanwhocodes
     │   ├── @jridgewell
+    │   ├── @remix-run
     │   ├── @rolldown
     │   ├── @rollup
     │   ├── @types
@@ -148,6 +160,8 @@ py_tagging
     │   ├── react
     │   ├── react-dom
     │   ├── react-refresh
+    │   ├── react-router
+    │   ├── react-router-dom
     │   ├── resolve-from
     │   ├── rollup
     │   ├── scheduler
@@ -174,6 +188,7 @@ py_tagging
     │   └── zod-validation-error
     ├── package-lock.json
     ├── package.json
+    ├── package.zip
     ├── public
     │   └── vite.svg
     ├── src
@@ -184,6 +199,7 @@ py_tagging
     │   ├── components
     │   ├── hooks
     │   ├── index.css
+    │   ├── layout
     │   ├── main.tsx
     │   ├── pages
     │   └── types

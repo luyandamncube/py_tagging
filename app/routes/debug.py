@@ -1,14 +1,16 @@
 from fastapi import APIRouter
 from app.db import get_db
 from app.services.content_snapshot import get_content_snapshot
+from app.services.content_snapshot import list_content_snapshots
 
 router = APIRouter(prefix="/debug", tags=["debug"])
 
 @router.get("/content")
 def list_content():
-    con = get_db()
-    rows = con.execute("SELECT * FROM content").fetchall()
-    return rows
+    return list_content_snapshots()
+    # con = get_db()
+    # rows = con.execute("SELECT * FROM content").fetchall()
+    # return rows
 
 @router.get("/content/count")
 def get_content_count():

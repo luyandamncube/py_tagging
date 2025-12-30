@@ -6,8 +6,6 @@ import "./layout.css";
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  // 👉 Right panel state exposed to routes
   const [rightPanel, setRightPanel] = useState<React.ReactNode>(null);
 
   return (
@@ -37,14 +35,12 @@ export default function Layout() {
         />
 
         <main className="content">
-          {/* 👇 THIS is the critical change */}
           <Outlet context={{ setRightPanel }} />
         </main>
 
         {/* Desktop right-hand panel */}
-        <RightPanel>
-          {rightPanel}
-        </RightPanel>
+        {rightPanel && <RightPanel>{rightPanel}</RightPanel>}
+        
       </div>
     </>
   );

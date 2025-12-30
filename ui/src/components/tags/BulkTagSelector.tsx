@@ -5,9 +5,10 @@ import TagGroupSection from "./TagGroupSection";
 type Props = {
   groups: TagGroup[];
   loading?: boolean;
-  selectedTagIds: string[]; // ✅ FIXED
+  selectedTagIds: string[];
   onToggleTag: (tagId: string) => void;
   onCreateTag?: (groupId: string, label: string) => Promise<void> | void;
+  blockedGroupIds?: Set<string>;
 };
 
 export default function BulkTagSelector({
@@ -16,17 +17,12 @@ export default function BulkTagSelector({
   selectedTagIds,
   onToggleTag,
   onCreateTag,
+  blockedGroupIds,
 }: Props) {
-
+  // ✅ SAFE DEFAULT
+  const blocked = blockedGroupIds ?? new Set<string>();
   const [open, setOpen] = useState(false);
-  // console.log(
-  //   "[BulkTagSelector render]",
-  //   "open:",
-  //   open,
-  //   "groups:",
-  //   groups?.length
-  // );
-  // ✅ loading handled INSIDE component (Fix #3)
+
   if (loading) {
     return (
       <div style={{ padding: 12, opacity: 0.7 }}>
@@ -35,7 +31,6 @@ export default function BulkTagSelector({
     );
   }
 
-  // ✅ empty state
   if (!groups || groups.length === 0) {
     return (
       <div style={{ padding: 12, opacity: 0.6 }}>
@@ -55,22 +50,29 @@ export default function BulkTagSelector({
 
       {open && (
         <div style={{ marginTop: 16 }}>
-          {groups.map((group) => (
-            <TagGroupSection
-              key={group.id}
-              group={group}
-              selectedTagIds={selectedTagIds}
-              onToggleTag={onToggleTag}
-              onCreateTag={
-                onCreateTag
-                  ? (label: string) => onCreateTag(group.id, label)
-                  : undefined
-              }
-            />
-          ))}
+          {groups.map((group) => {
+            const isBlocked = blocked.has(group.id);
+
+            return (
+              <div
+                key={group.id}
+                className={`tag-group ${isBlocked ? "blocked" : ""}`}
+              >
+                <TagGroupSection
+                  group={group}
+                  selectedTagIds={selectedTagIds}
+                  onToggleTag={onToggleTag}
+                  onCreateTag={
+                    onCreateTag
+                      ? (label: string) => onCreateTag(group.id, label)
+                      : undefined
+                  }
+                />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
-
 }

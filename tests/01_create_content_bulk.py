@@ -31,6 +31,7 @@ def main():
     items = [
         {
             "url": f"https://example.com/bulk_item_{i+1}.jpg",
+            # "url": f"https://media.istockphoto.com/id/1018078858/photo/gorgeous-ginger-cat-on-isolated-black-background.jpg?s=612x612&w=0&k=20&c=47yGoaN8LMsLCMKhScisycwaGnZdKTNvdTq61mHTLBo=",
             "type": "image",
         }
         for i in range(count)

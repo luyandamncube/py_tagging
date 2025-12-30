@@ -1,0 +1,46 @@
+.validation-panel {
+  margin-bottom: 16px;
+}
+
+.panel-header {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #ddd;
+}
+
+.panel-empty {
+  font-size: 13px;
+  color: #888;
+}
+
+.panel-empty.success {
+  color: #5fd18a;
+}
+
+.issues {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.issue {
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.issue.warning {
+  background: rgba(255, 193, 7, 0.15);
+  color: #f5c36a;
+}
+
+.issue.error {
+  background: rgba(244, 67, 54, 0.15);
+  color: #f08a82;
+}
+
+.issue.info {
+  background: rgba(33, 150, 243, 0.15);
+  color: #8cc7ff;
+}

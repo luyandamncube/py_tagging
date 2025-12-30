@@ -10,7 +10,7 @@ def get_content_snapshot(content_id: str):
     # -------------------------
     row = con.execute(
         """
-        SELECT id, url, site, creator, type, created_at
+        SELECT id, url, site, creator, type, status, created_at
         FROM content
         WHERE id = ?
         """,
@@ -26,7 +26,8 @@ def get_content_snapshot(content_id: str):
         "site": row[2],
         "creator": row[3],
         "type": row[4],
-        "created_at": row[5],
+        "status" : row[5],
+        "created_at": row[6],
     }
 
     # -------------------------
@@ -90,3 +91,60 @@ def get_content_snapshot(content_id: str):
             "summary": validation["summary"],
         },
     }
+
+def list_content_snapshots():
+    con = get_db()
+
+    rows = con.execute(
+        """
+        SELECT id, url, site, creator, type, status, created_at
+        FROM content
+        ORDER BY created_at DESC
+        """
+    ).fetchall()
+
+    items = []
+
+    for row in rows:
+        content_id = row[0]
+
+        content = {
+            "id": row[0],
+            "url": row[1],
+            "site": row[2],
+            "creator": row[3],
+            "type": row[4],
+            "status": row[5],
+            "created_at": row[6],
+        }
+
+        tag_rows = con.execute(
+            """
+            SELECT
+                t.id,
+                t.label,
+                tg.id AS group_id
+            FROM content_tag ct
+            JOIN tag t ON t.id = ct.tag_id
+            JOIN tag_group tg ON tg.id = t.group_id
+            WHERE ct.content_id = ?
+            ORDER BY tg.position, t.usage_count DESC
+            """,
+            (content_id,),
+        ).fetchall()
+
+        tags = [
+            {
+                "id": tag_id,
+                "label": label,
+                "group_id": group_id,
+            }
+            for tag_id, label, group_id in tag_rows
+        ]
+
+        items.append({
+            **content,
+            "tags": tags,
+        })
+
+    return items
