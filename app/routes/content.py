@@ -4,9 +4,9 @@ from app.db import get_db
 from app.schemas import ContentCreate
 from app.services.content_validation import validate_content
 from app.services.content_snapshot import get_content_snapshot
-
 from app.db.snapshot import snapshot_db
 from app.services.drive_sync import enqueue_drive_sync, LAST_SYNC_STATUS
+from app.services.content_preview import build_and_store_preview
 
 
 router = APIRouter(prefix="/content", tags=["content"])
@@ -19,13 +19,26 @@ def create_content(payload: ContentCreate):
 
     con.execute(
         """
-        INSERT INTO content (id, url, site, creator, type)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO content (id, url, site, creator, type, created_at)
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         """,
         (content_id, payload.url, payload.site, payload.creator, payload.type),
     )
 
+    # --------------------------------------------------
+    # 🖼️ Build preview (best-effort, non-blocking)
+    # --------------------------------------------------
+    try:
+        build_and_store_preview(
+            content_id=content_id,
+            source_url=payload.url,
+        )
+    except Exception as e:
+        # IMPORTANT: never fail content creation
+        print(f"⚠️ Preview build failed for {payload.url}: {e}")
+
     return {"id": content_id}
+
 
 
 @router.get("/next")
@@ -155,6 +168,18 @@ def create_content_bulk(payload: dict):
                     (content_id, tag_id),
                 )
 
+            # --------------------------------------------------
+            # 🖼️ Build preview (best-effort, non-blocking)
+            # --------------------------------------------------
+            try:
+                build_and_store_preview(
+                    content_id=content_id,
+                    source_url=item["url"],
+                )
+            except Exception:
+                # Never fail bulk insert because of preview issues
+                pass
+
             created.append(content_id)
 
         except Exception:
@@ -186,6 +211,7 @@ def create_content_bulk(payload: dict):
     }
 
 
+
 @router.post("/check-duplicates")
 def check_duplicates(payload: dict):
     urls = payload.get("urls", [])
@@ -205,4 +231,29 @@ def check_duplicates(payload: dict):
 
     return {
         "existing": [r[0] for r in rows]
+    }
+
+@router.post("/{content_id}/preview/rebuild")
+def rebuild_preview(content_id: str):
+    con = get_db()
+
+    row = con.execute(
+        "SELECT url FROM content WHERE id = ?",
+        (content_id,),
+    ).fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Content not found")
+
+    try:
+        preview = build_and_store_preview(
+            content_id=content_id,
+            source_url=row[0],
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return {
+        "status": "ok",
+        "preview": preview,
     }

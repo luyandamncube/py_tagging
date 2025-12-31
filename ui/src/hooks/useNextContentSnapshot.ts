@@ -1,45 +1,55 @@
-import { useCallback, useEffect, useState } from "react";
-import {
-  fetchNextContentId,
-  fetchContentSnapshot,
-  completeContent,
-  
-} from "../api/content";
-import type {ContentSnapshot,} from "../api/content";
+import { useEffect, useState } from "react"
+import { getNextContent, getContentSnapshot } from "../api/content"
+import type { ContentSnapshot, Content } from "../types/content"
 
 export function useNextContentSnapshot() {
-  const [snapshot, setSnapshot] = useState<ContentSnapshot | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadNext = useCallback(async () => {
-    setLoading(true);
-
-    const nextId = await fetchNextContentId();
-    if (!nextId) {
-      setSnapshot(null);
-      setLoading(false);
-      return;
-    }
-
-    const snap = await fetchContentSnapshot(nextId);
-    setSnapshot(snap);
-    setLoading(false);
-  }, []);
-
-  const completeAndNext = useCallback(async () => {
-    if (!snapshot) return;
-    await completeContent(snapshot.content.id);
-    await loadNext();
-  }, [snapshot, loadNext]);
+  const [snapshot, setSnapshot] = useState<ContentSnapshot | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadNext();
-  }, [loadNext]);
+    let cancelled = false
+
+    async function load() {
+      setLoading(true)
+      setError(null)
+
+      try {
+        // Step 1: get next content stub
+        const next: Content | null = await getNextContent()
+
+        if (!next) {
+          if (!cancelled) setSnapshot(null)
+          return
+        }
+
+        // Step 2: fetch full snapshot
+        const full = await getContentSnapshot(next.id)
+
+        if (!cancelled) {
+          setSnapshot(full)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError("Failed to load next content")
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    load()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return {
     snapshot,
     loading,
-    loadNext,
-    completeAndNext,
-  };
+    error,
+  }
 }

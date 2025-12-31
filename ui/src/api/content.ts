@@ -1,72 +1,67 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+// ui/src/api/content.ts
 
-export interface ContentTag {
-  id: string;
-  label: string;
-  group_id: string;
+import { apiFetch } from "./index"
+import type {
+  Content,
+  ContentSnapshot,
+} from "../types/content"
+
+/**
+ * List content snapshots (GET /content)
+ */
+export async function listContent(): Promise<Content[]> {
+  return apiFetch<Content[]>("/content")
 }
 
-export interface ContentSnapshot {
-  content: {
-    id: string;
-    url: string;
-    site?: string;
-    creator?: string;
-    type?: string;
-  };
-  tags: Record<string, ContentTag[]>;
-}
-
-/* ----------------------------------
-   Existing (keep this)
----------------------------------- */
-export async function fetchContentSnapshot(
+/**
+ * Get full content snapshot (GET /content/{id})
+ */
+export async function getContentSnapshot(
   contentId: string
 ): Promise<ContentSnapshot> {
-  const res = await fetch(`${API_BASE}/content/${contentId}`);
-  if (!res.ok) throw new Error("Failed to load content");
-  return res.json();
+  return apiFetch<ContentSnapshot>(`/content/${contentId}`)
 }
 
-/* ----------------------------------
-   NEW: get next content ID
----------------------------------- */
-export async function fetchNextContentId(): Promise<string | null> {
-  const res = await fetch(`${API_BASE}/content/next`);
-  if (!res.ok) throw new Error("Failed to fetch next content");
-
-  const data = await res.json();
-  if (!data) return null;
-
-  return data.id;
+/**
+ * Get next uncompleted content (GET /content/next)
+ */
+export async function getNextContent(): Promise<Content | null> {
+  return apiFetch<Content | null>("/content/next")
 }
 
-/* ----------------------------------
-   NEW: mark content complete
----------------------------------- */
-export async function completeContent(contentId: string): Promise<void> {
-  const res = await fetch(
-    `${API_BASE}/content/${contentId}/complete`,
-    { method: "POST" }
-  );
-  if (!res.ok) throw new Error("Failed to complete content");
-}
-
-export async function createContent(payload: {
-  url: string;
-  site?: string;
-  creator?: string;
-  type?: string;
-}) {
-  const res = await fetch(`${API_BASE}/content/`, {
+/**
+ * Mark content as complete (POST /content/{id}/complete)
+ */
+export async function completeContent(
+  contentId: string
+): Promise<{
+  status: "ok"
+  content_id: string
+}> {
+  return apiFetch(`/content/${contentId}/complete`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  })
+}
 
-  if (!res.ok) {
-    throw new Error("Failed to create content");
+/**
+ * Bulk create content (POST /content/bulk)
+ */
+export interface BulkCreateResult {
+  created: number
+  skipped: number
+  skipped_urls: string[]
+  backup: {
+    scheduled: boolean
+    snapshot: string | null
+    last_sync: unknown
   }
+}
 
-  return res.json();
+export async function bulkCreateContent(
+  items: unknown[]
+): Promise<BulkCreateResult> {
+  return apiFetch<BulkCreateResult>("/content/bulk", {
+    method: "POST",
+    body: JSON.stringify({ items }),
+  })
 }

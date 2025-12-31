@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import TagsPanel from "../components/tags/TagsPanel";
 import { useTagGroupsWithTags } from "../hooks/useTagGroupsWithTags";
 import { ensureTag } from "../api/tags";
 import ValidationPanel from "../components/validation/ValidationPanel";
-
+import ContentPreviewView from "../components/ContentPreview";
+import "./review.css";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE || "http://localhost:8000";
@@ -16,6 +17,7 @@ type ReviewItem = {
   site?: string;
   creator?: string;
   tags?: { id: string }[];
+  preview?: any; // ← ADD THIS
 };
 
 type LayoutContext = {
@@ -33,6 +35,8 @@ export default function ReviewPage() {
 
   const [validationLoading, setValidationLoading] = useState(false);
   const [validationIssues, setValidationIssues] = useState<any[]>([]);
+
+  const { contentId } = useParams<{ contentId?: string }>();
 
   const hasBlockingErrors = validationIssues.some(
     (issue) => issue.level === "error"
@@ -53,26 +57,66 @@ export default function ReviewPage() {
   // Load next item
   // --------------------------------------------------
 
-  async function loadNext() {
+  // async function loadNext() {
+  //   setLoading(true);
+
+  //   try {
+  //     const res = await fetch(`${API_BASE}/content/next`);
+  //     if (!res.ok) {
+  //       setItem(null);
+  //       return;
+  //     }
+
+  //     const data = await res.json();
+  //     setItem(data);
+  //     setSelectedTagIds(data.tags?.map((t: any) => t.id) || []);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
+
+  async function loadItem() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/content/next`);
+      let res;
+
+      if (contentId) {
+        // DIRECT MODE
+        res = await fetch(`${API_BASE}/content/${contentId}`);
+      } else {
+        // QUEUE MODE
+        res = await fetch(`${API_BASE}/content/next`);
+      }
+
       if (!res.ok) {
         setItem(null);
         return;
       }
 
       const data = await res.json();
-      setItem(data);
-      setSelectedTagIds(data.tags?.map((t: any) => t.id) || []);
+
+      if (data.content) {
+        // Snapshot shape
+        setItem({
+          ...data.content,
+          preview: data.preview, // ← IMPORTANT
+          tags: data.tags,        // grouped tags (used elsewhere)
+        });
+        setSelectedTagIds(extractTagIds(data));
+      } else {
+        // Queue shape
+        setItem(data);
+        setSelectedTagIds(extractTagIds(data));
+      }
+
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadNext();
+    loadItem();
   }, []);
 
   // --------------------------------------------------
@@ -208,10 +252,33 @@ export default function ReviewPage() {
     await fetch(`${API_BASE}/content/${item.id}/complete`, {
       method: "POST",
     });
-    await loadNext();
+
+    if (contentId) {
+      // If reviewing a specific item, go back to queue
+      window.location.href = "/review";
+    } else {
+      // Queue mode → continue
+      await loadItem();
+    }
+
     setCompleting(false);
   }
 
+  function extractTagIds(data: any): string[] {
+    // Snapshot shape: { tags: { groupId: [{ id }] } }
+    if (data?.tags && !Array.isArray(data.tags)) {
+      return Object.values(data.tags)
+        .flat()
+        .map((t: any) => t.id);
+    }
+
+    // Flat shape: { tags: [{ id }] }
+    if (Array.isArray(data?.tags)) {
+      return data.tags.map((t: any) => t.id);
+    }
+
+    return [];
+  }
 
   // --------------------------------------------------
   // Render
@@ -224,65 +291,54 @@ export default function ReviewPage() {
   if (!item) {
     return <div className="page">No content to review 🎉</div>;
   }
-
   return (
     <div className="page">
-      <header className="page-header">
+      {/* <header className="page-header">
         <h1>Review</h1>
         <p>Review and tag the next item</p>
-      </header>
+      </header> */}
 
-      {/* Media */}
-      <section className="card">
-        {item.type === "image" && (
-          <img
-            src={item.url}
-            alt="Review item"
-            style={{ maxWidth: "100%", borderRadius: 12 }}
+      {/* 🔽 Everything scrollable lives here */}
+      <div className="page-content">
+        {/* Media */}
+        <section className="card">
+          <ContentPreviewView
+            preview={item.preview}
+            className="review-media"
           />
-        )}
+        </section>
 
-        {item.type === "video" && (
-          <video
-            src={item.url}
-            controls
-            style={{ maxWidth: "100%", borderRadius: 12 }}
+
+
+        {/* Validation */}
+        {/* <section className="card">
+          <ValidationPanel
+            loading={validationLoading}
+            issues={validationIssues}
           />
-        )}
-      </section>
+        </section> */}
 
-      {/* Metadata */}
-      <section className="card">
-        <div><strong>Site:</strong> {item.site || "—"}</div>
-        <div><strong>Creator:</strong> {item.creator || "—"}</div>
-        <div><strong>ID:</strong> {item.id}</div>
-      </section>
+        {/* ✅ Mobile-only tags MUST be inside page-content */}
+        <section className="card tags-inline">
+          <TagsPanel
+            groups={tagGroups}
+            loading={tagsLoading}
+            selectedTagIds={selectedTagIds}
+            onToggleTag={toggleTag}
+            onCreateTag={handleCreateTag}
+            blockedGroupIds={blockingGroupIds}
+          />
+        </section>
+      </div>
 
-      {/* Validation */}
-
-      <section className="card">
-        <ValidationPanel
-          loading={validationLoading}
-          issues={validationIssues}
-        />
-      </section>
-
-      {/* Mobile-only tags */}
-
-      <section className="card tags-inline">
-        <TagsPanel
-          groups={tagGroups}
-          loading={tagsLoading}
-          selectedTagIds={selectedTagIds}
-          onToggleTag={toggleTag}
-          onCreateTag={handleCreateTag}
-          blockedGroupIds={blockingGroupIds}
-        />
-
-      </section>
-
-      {/* Actions */}
+      {/* Footer stays fixed */}
       <footer className="page-actions">
+                {/* Metadata */}
+        <section className="card">
+          <div><strong>Site:</strong> {item.site || "—"}</div>
+          <div><strong>Creator:</strong> {item.creator || "—"}</div>
+          <div><strong>ID:</strong> {item.id}</div>
+        </section>
         <button
           className={`primary ${hasBlockingErrors ? "disabled" : ""}`}
           onClick={completeAndNext}
@@ -299,16 +355,9 @@ export default function ReviewPage() {
               ? "Completing…"
               : "Complete & Next"}
         </button>
-
-
       </footer>
     </div>
-    
   );
-//   useEffect(() => {
-//   return () => {
-//     setRightPanel(null);
-//   };
-// }, [setRightPanel]);
+
 }
 

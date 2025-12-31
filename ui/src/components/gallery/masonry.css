@@ -5,18 +5,25 @@
 .masonry-grid {
   column-count: 5;
   column-gap: 16px;
+  flex: 1 1 auto;
 }
 
 @media (max-width: 1400px) {
-  .masonry-grid { column-count: 4; }
+  .masonry-grid {
+    column-count: 4;
+  }
 }
 
 @media (max-width: 1100px) {
-  .masonry-grid { column-count: 3; }
+  .masonry-grid {
+    column-count: 3;
+  }
 }
 
 @media (max-width: 700px) {
-  .masonry-grid { column-count: 2; }
+  .masonry-grid {
+    column-count: 2;
+  }
 }
 
 /* ========================= */
@@ -35,7 +42,7 @@
 
 .masonry-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .masonry-item img,
@@ -58,11 +65,10 @@
   padding: 12px;
   opacity: 0;
   transition: opacity 0.2s ease;
-  background: linear-gradient(
-    to bottom,
-    rgba(0,0,0,0.35),
-    rgba(0,0,0,0.65)
-  );
+  background: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0.35),
+      rgba(0, 0, 0, 0.65));
+  pointer-events: none;
 }
 
 .masonry-item:hover .overlay {
@@ -75,7 +81,7 @@
 }
 
 .overlay-btn {
-  background: rgba(20,20,20,0.85);
+  background: rgba(20, 20, 20, 0.85);
   border: none;
   color: #fff;
   font-weight: 600;
@@ -85,7 +91,7 @@
 }
 
 .overlay-btn:hover {
-  background: rgba(40,40,40,0.95);
+  background: rgba(40, 40, 40, 0.95);
 }
 
 .overlay-top {
@@ -99,8 +105,12 @@
   gap: 6px;
 }
 
+.overlay button,
+.overlay a {
+  pointer-events: auto;
+}
 .meta {
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   padding: 4px 8px;
   border-radius: 999px;
   font-size: 12px;
@@ -144,13 +154,11 @@
 .image-fallback {
   width: 100%;
   aspect-ratio: 3 / 4;
-  background: repeating-linear-gradient(
-    45deg,
-    #222,
-    #222 10px,
-    #1a1a1a 10px,
-    #1a1a1a 20px
-  );
+  background: repeating-linear-gradient(45deg,
+      #222,
+      #222 10px,
+      #1a1a1a 10px,
+      #1a1a1a 20px);
 
   display: flex;
   align-items: center;
@@ -159,4 +167,85 @@
   color: #888;
   font-size: 13px;
   text-align: center;
+}
+
+/* ---------------------------------------
+   Masonry media wrapper
+--------------------------------------- */
+
+.masonry-media {
+  position: relative;
+  width: 100%;
+
+  /* Default aspect ratio (safe for most images) */
+  aspect-ratio: 1 / 1;
+
+  /* background: #f2f2f2; */
+  overflow: hidden;
+}
+
+/* Image inside masonry preview */
+.masonry-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: transparent;
+}
+
+/* ---------------------------------------
+   Pending / skeleton state
+--------------------------------------- */
+
+.masonry-media.skeleton {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+/* Simple shimmer */
+@keyframes pulse {
+  0% {
+    background-color: #f2f2f2;
+  }
+
+  50% {
+    background-color: #e6e6e6;
+  }
+
+  100% {
+    background-color: #f2f2f2;
+  }
+}
+
+/* ---------------------------------------
+   Failed preview fallback
+--------------------------------------- */
+
+.masonry-media.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.masonry-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.masonry-link:focus {
+  outline: none;
+}
+
+.review-media {
+  max-width: 100%;
+  aspect-ratio: auto;
+}
+
+.review-media img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
 }

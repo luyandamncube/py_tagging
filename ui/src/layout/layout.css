@@ -112,3 +112,8 @@ body {
   z-index: 60;
 }
 
+.app-layout {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+}

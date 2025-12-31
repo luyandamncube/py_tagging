@@ -5,3 +5,4 @@ pydantic
 python-multipart
 rapidfuzz
 requests
+beautifulsoup4>=4.12.0

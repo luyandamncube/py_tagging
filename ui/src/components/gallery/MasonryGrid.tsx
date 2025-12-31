@@ -1,27 +1,11 @@
-import { useState } from "react";
 import "./masonry.css";
-
-type ContentItem = {
-  id?: string;
-  url: string;
-  type: "image" | "video";
-  site?: string;
-  creator?: string;
-  tags?: {
-    id: string;
-    label: string;
-    usage_count?: number;
-  }[];
-};
-
-type Props = {
-  items: ContentItem[];
-};
-
-function getTopTags(
-  tags: ContentItem["tags"],
-  limit = 3
-) {
+import type { Content } from "../../types/content";
+import ContentPreviewView from "../ContentPreview";
+import { Link } from "react-router-dom";
+/**
+ * Extract top N tags by usage_count (unchanged)
+ */
+function getTopTags(tags: Content["tags"], limit = 3) {
   if (!tags || tags.length === 0) return [];
 
   const sorted = [...tags].sort(
@@ -31,44 +15,50 @@ function getTopTags(
   return sorted.slice(0, limit);
 }
 
-function MasonryItem({ item }: { item: ContentItem }) {
-  const [error, setError] = useState(false);
-
+/* -----------------------------------------
+   MasonryItem
+----------------------------------------- */
+function MasonryItem({
+  item,
+  onTagClick,
+}: {
+  item: Content;
+  onTagClick?: (tagId: string) => void;
+}) {
   return (
     <div className="masonry-item">
-      {!error ? (
-        item.type === "image" ? (
-          <img
-            src={item.url}
-            alt=""
-            loading="lazy"
-            onError={() => setError(true)}
-          />
-        ) : (
-          <video
-            src={item.url}
-            muted
-            playsInline
-            onError={() => setError(true)}
-          />
-        )
-      ) : (
-        <div className="image-fallback">
-          <span>⚠️ Media unavailable</span>
-        </div>
-      )}
+      {/* Media preview */}
+      <ContentPreviewView
+        preview={item.preview}
+        className="masonry-media"
+      />
 
+      {/* Overlay */}
       <div className="overlay">
         <div className="overlay-top">
-          <button className="overlay-btn">View</button>
+          <Link
+            to={`/review/${item.id}`}
+            className="overlay-btn"
+          >
+            Review
+          </Link>
         </div>
+        
 
         <div className="overlay-bottom">
           {getTopTags(item.tags).length > 0 ? (
             getTopTags(item.tags).map((tag) => (
-              <span key={tag.id} className="tag-pill">
+              <button
+                key={tag.id}
+                className="tag-pill clickable"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onTagClick?.(tag.id);
+                }}
+              >
                 {tag.label}
-              </span>
+              </button>
             ))
           ) : (
             <span className="tag-pill muted">No tags</span>
@@ -79,13 +69,22 @@ function MasonryItem({ item }: { item: ContentItem }) {
   );
 }
 
-export default function MasonryGrid({ items }: Props) {
+/* -----------------------------------------
+   MasonryGrid
+----------------------------------------- */
+type Props = {
+  items: Content[];
+  onTagClick?: (tagId: string) => void;
+};
+
+export default function MasonryGrid({ items, onTagClick }: Props) {
   return (
     <div className="masonry-grid">
-      {items.map((item, index) => (
+      {items.map((item) => (
         <MasonryItem
-          key={item.id ?? `content-${index}`}
+          key={item.id}
           item={item}
+          onTagClick={onTagClick}
         />
       ))}
     </div>

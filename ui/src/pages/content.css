@@ -7,3 +7,19 @@
 .content-grid .card {
   padding: 12px;
 }
+
+/* Page layout */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100vh;
+}
+
+.tag-pill.clickable {
+  cursor: pointer;
+}
+
+.tag-pill.clickable:hover {
+  background: rgba(255, 255, 255, 0.18);
+}

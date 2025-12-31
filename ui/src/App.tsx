@@ -14,6 +14,8 @@ export default function App() {
 
           <Route path="/intake" element={<BulkIntakePage />} />
           <Route path="/review" element={<ReviewPage />} />
+          <Route path="/review/:contentId" element={<ReviewPage />} />
+
           <Route path="/content" element={<ContentPage />} />
         </Route>
       </Routes>

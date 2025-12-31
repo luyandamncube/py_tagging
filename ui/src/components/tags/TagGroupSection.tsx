@@ -44,7 +44,7 @@ export default function TagGroupSection({
   }
 
   return (
-    <div className="tag-group">
+    <div >
       {/* LEFT */}
       <div>
         <div className="tag-group-title">

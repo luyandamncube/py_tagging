@@ -26,9 +26,45 @@ def get_content_snapshot(content_id: str):
         "site": row[2],
         "creator": row[3],
         "type": row[4],
-        "status" : row[5],
+        "status": row[5],
         "created_at": row[6],
     }
+
+    # -------------------------
+    # Preview (derived)
+    # -------------------------
+    preview_row = con.execute(
+        """
+        SELECT
+            preview_type,
+            preview_url,
+            preview_url_normalized,
+            title,
+            description,
+            preview_status,
+            fetched_at
+        FROM content_preview
+        WHERE content_id = ?
+        """,
+        (content_id,),
+    ).fetchone()
+
+
+    if preview_row:
+        preview = {
+            "type": preview_row[0],
+            "url": preview_row[1],
+            "url_normalized": preview_row[2],
+            "title": preview_row[3],
+            "description": preview_row[4],
+            "status": preview_row[5],
+            "fetched_at": preview_row[6],
+        }
+    else:
+        preview = {
+            "status": "pending"
+        }
+
 
     # -------------------------
     # Tags (grouped)
@@ -55,11 +91,10 @@ def get_content_snapshot(content_id: str):
         )
 
     # -------------------------
-    # Validation (reuse existing)
+    # Validation
     # -------------------------
     validation = validate_content(content_id)
 
-    # Completion %
     total_required = sum(
         1 for g in validation["groups"] if g["required"]
     )
@@ -83,6 +118,7 @@ def get_content_snapshot(content_id: str):
 
     return {
         "content": content,
+        "preview": preview,
         "tags": tags,
         "validation": {
             "valid": validation["valid"],
@@ -97,11 +133,24 @@ def list_content_snapshots():
 
     rows = con.execute(
         """
-        SELECT id, url, site, creator, type, status, created_at
-        FROM content
-        ORDER BY created_at DESC
+        SELECT
+            c.id,
+            c.url,
+            c.site,
+            c.creator,
+            c.type,
+            c.status,
+            c.created_at,
+            cp.preview_status,
+            cp.preview_url,
+            cp.preview_url_normalized
+        FROM content c
+        LEFT JOIN content_preview cp
+            ON cp.content_id = c.id
+        ORDER BY c.created_at DESC
         """
     ).fetchall()
+
 
     items = []
 
@@ -116,6 +165,11 @@ def list_content_snapshots():
             "type": row[4],
             "status": row[5],
             "created_at": row[6],
+            "preview": {
+                "status": row[7] or "pending",
+                "url": row[8],
+                "url_normalized" : row[9]
+            },
         }
 
         tag_rows = con.execute(
@@ -148,3 +202,4 @@ def list_content_snapshots():
         })
 
     return items
+

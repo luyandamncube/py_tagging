@@ -4,25 +4,25 @@ import MasonryGrid from "../components/gallery/MasonryGrid";
 import TagFilterBar from "../components/filters/TagFilterBar";
 
 const API_BASE =
-    import.meta.env.VITE_API_BASE || "http://localhost:8000";
+  import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
 type ContentItem = {
+  id: string;
+  url: string;
+  type: "image" | "video";
+  site?: string;
+  creator?: string;
+  created_at?: string;
+  tags?: {
     id: string;
-    url: string;
-    type: "image" | "video";
-    site?: string;
-    creator?: string;
-    created_at?: string;
-    tags?: {
-        id: string;
-        label: string;
-        group_id?: string;
-        usage_count?: number;
-    }[];
+    label: string;
+    group_id?: string;
+    usage_count?: number;
+  }[];
 };
 
 type LayoutContext = {
-    setRightPanel: (node: React.ReactNode | null) => void;
+  setRightPanel: (node: React.ReactNode | null) => void;
 };
 
 export default function ContentPage() {
@@ -89,6 +89,15 @@ export default function ContentPage() {
     });
   }
 
+  function handleGridTagClick(tagId: string) {
+    setSelectedTags((prev) => {
+      if (prev.has(tagId)) return prev; // already active → no-op
+      const next = new Set(prev);
+      next.add(tagId);
+      return next;
+    });
+  }
+
   if (loading) {
     return <div className="page">Loading content…</div>;
   }
@@ -101,17 +110,21 @@ export default function ContentPage() {
           <p>Browse content in the database</p>
         </header>
       )} */}
-<header className="page-header">
+      {/* <header className="page-header">
           <h1>Content</h1>
           <p>Browse content in the database</p>
-        </header>
+        </header> */}
       <TagFilterBar
         tags={tagStats}
         selected={selectedTags}
         onToggle={toggleFilter}
       />
 
-      <MasonryGrid items={filteredItems} />
+      <MasonryGrid
+        items={filteredItems}
+        onTagClick={handleGridTagClick}
+      />
+
     </div>
   );
 }

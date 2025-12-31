@@ -1,0 +1,19 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Prevent huge previews from blowing up height */
+.review-media img,
+.review-media video {
+  max-height: 60vh;
+  width: 100%;
+  object-fit: contain;
+}

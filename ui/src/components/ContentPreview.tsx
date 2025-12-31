@@ -1,29 +1,60 @@
-interface Content {
-  id: string;
-  url: string;
-  site?: string;
-  creator?: string;
-  type?: string;
-}
+import { useState } from "react";
+import type { ContentPreview } from "../types/content";
 
 interface Props {
-  content: Content;
+  preview?: ContentPreview;
+  className?: string;
 }
 
-export default function ContentPreview({ content }: Props) {
-  return (
-    <div>
-      <div style={{ fontSize: 12, opacity: 0.6 }}>
-        Previewing content
-      </div>
+export default function ContentPreviewView({
+  preview,
+  className,
+}: Props) {
+  const [failed, setFailed] = useState(false);
 
-      <div style={{ marginTop: 8 }}>
-        <div><strong>ID:</strong> {content.id}</div>
-        <div><strong>URL:</strong> {content.url}</div>
-        {content.site && <div><strong>Site:</strong> {content.site}</div>}
-        {content.creator && <div><strong>Creator:</strong> {content.creator}</div>}
-        {content.type && <div><strong>Type:</strong> {content.type}</div>}
+  const status = preview?.status ?? "pending";
+
+  // If failed ONCE → never attempt again
+  if (status === "failed" || failed) {
+    return (
+      <div className={`${className} masonry-media fallback`}>
+        <span>⚠️ Preview unavailable</span>
       </div>
+    );
+  }
+
+  if (status === "pending") {
+    return (
+      <div className={`${className} masonry-media skeleton`} />
+    );
+  }
+
+  const src =
+    preview?.url_normalized ??
+    preview?.url ??
+    null;
+
+  // Guard: no src → fallback
+  if (!src) {
+    return (
+      <div className={`${className} masonry-media fallback`}>
+        <span>⚠️ Preview unavailable</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${className} masonry-media`}>
+      <img
+        src={src}
+        alt={preview?.title ?? "Content preview"}
+        loading="lazy"
+        onError={(e) => {
+          // IMPORTANT: stop further loading attempts
+          e.currentTarget.onerror = null;
+          setFailed(true);
+        }}
+      />
     </div>
   );
 }
