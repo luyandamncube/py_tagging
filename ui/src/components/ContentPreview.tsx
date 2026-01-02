@@ -1,11 +1,17 @@
 import { useState } from "react";
 import type { ContentPreview } from "../types/content";
 
-interface Props {
-  preview?: ContentPreview;
-  className?: string;
-   disableInteraction?: boolean;
-}
+// interface Props {
+//   preview?: ContentPreview;
+//   className?: string;
+//    disableInteraction?: boolean;
+// }
+type Props = {
+  item: any;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onOpen: () => void;
+};
 
 export default function ContentPreviewView({
   preview,

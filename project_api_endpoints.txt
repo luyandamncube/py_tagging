@@ -40,6 +40,11 @@ POST
 /content/{content_id}/preview/rebuild
 Rebuild Preview
 
+
+POST
+/content/export
+Export Content
+
 tags
 
 

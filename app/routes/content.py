@@ -290,3 +290,48 @@ def rebuild_preview(content_id: str):
         "status": "ok",
         "preview": preview,
     }
+
+@router.post("/export")
+def export_content(payload: dict):
+    tag_ids = payload.get("tag_ids", [])
+    fmt = payload.get("format", "txt")
+
+    con = get_db()
+
+    if not tag_ids:
+        # Export everything (explicit decision)
+        rows = con.execute(
+            "SELECT url FROM content ORDER BY created_at"
+        ).fetchall()
+    else:
+        placeholders = ",".join("?" * len(tag_ids))
+
+        rows = con.execute(
+            f"""
+            SELECT DISTINCT c.url
+            FROM content c
+            JOIN content_tag ct ON ct.content_id = c.id
+            WHERE ct.tag_id IN ({placeholders})
+            GROUP BY c.id
+            HAVING COUNT(DISTINCT ct.tag_id) = ?
+            ORDER BY c.created_at
+            """,
+            (*tag_ids, len(tag_ids)),
+        ).fetchall()
+
+    urls = [r[0] for r in rows]
+
+    if fmt == "json":
+        return {"urls": urls}
+
+    if fmt == "csv":
+        return {
+            "content": "url\n" + "\n".join(urls),
+            "content_type": "text/csv",
+        }
+
+    # default: txt
+    return {
+        "content": "\n".join(urls),
+        "content_type": "text/plain",
+    }

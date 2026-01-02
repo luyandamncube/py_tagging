@@ -16,6 +16,7 @@ py_tagging
 │   │   └── tags.py
 │   ├── schemas.py
 │   └── services
+│       ├── content_preview.py
 │       ├── content_snapshot.py
 │       ├── content_validation.py
 │       ├── drive_sync.py
@@ -35,9 +36,9 @@ py_tagging
 │   │   └── live_20251229_002433.duckdb
 │   ├── exports
 │   │   └── content.parquet
-│   ├── live.duckdb
-│   └── live.duckdb.wal
+│   └── live.duckdb
 ├── docker-compose.yml
+├── project_api_endpoints.txt
 ├── project_structure.txt
 ├── requirements.txt
 ├── scripts
@@ -59,6 +60,8 @@ py_tagging
 └── ui
     ├── Dockerfile
     ├── README.md
+    ├── archive
+    │   └── BulkTagGroup.tsx
     ├── eslint.config.js
     ├── index.html
     ├── node_modules

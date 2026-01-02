@@ -18,25 +18,101 @@ function getTopTags(tags: Content["tags"], limit = 3) {
 /* -----------------------------------------
    MasonryItem
 ----------------------------------------- */
+// function MasonryItem({
+//   item,
+//   onTagClick,
+//   onOpen,
+// }: {
+//   item: Content;
+//   onTagClick?: (tagId: string) => void;
+//   onOpen?: (item: Content) => void;
+// }) {
+//   return (
+//     <div className="masonry-item">
+//       {/* Media preview */}
+//       <div
+//         className="masonry-media-wrapper"
+//         // onClick={() => onOpen?.(item)}
+//         onClick={() => {
+//           console.log("MEDIA CLICKED", item.id);
+//           onOpen?.(item);
+//         }}
+//       >
+//         <ContentPreviewView
+//           preview={item.preview}
+//           className="masonry-media"
+//           disableInteraction
+//         />
+//       </div>
+
+
+//       {/* Overlay */}
+//       <div className="overlay">
+//         <div className="overlay-top">
+//           <Link
+//             to={`/review/${item.id}`}
+//             className="overlay-btn"
+//           >
+//             Review
+//           </Link>
+//         </div>
+
+
+//         <div className="overlay-bottom">
+//           {getTopTags(item.tags).length > 0 ? (
+//             getTopTags(item.tags).map((tag) => (
+//               <button
+//                 key={tag.id}
+//                 className="tag-pill clickable"
+//                 onClick={(e) => {
+//                   e.preventDefault();
+//                   e.stopPropagation();
+//                   onTagClick?.(tag.id);
+//                 }}
+//               >
+//                 {tag.label}
+//               </button>
+//             ))
+//           ) : (
+//             <span className="tag-pill muted">No tags</span>
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
 function MasonryItem({
   item,
+  selected,
+  onToggleSelect,
   onTagClick,
   onOpen,
 }: {
   item: Content;
+  selected: boolean;
+  onToggleSelect: () => void;
   onTagClick?: (tagId: string) => void;
   onOpen?: (item: Content) => void;
 }) {
   return (
-    <div className="masonry-item">
+    <div className={`masonry-item ${selected ? "selected" : ""}`}>
+      {/* Selection toggle */}
+      <button
+        className="select-overlay"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleSelect();
+        }}
+        aria-label="Select item"
+      >
+        {selected ? "✓" : "○"}
+      </button>
+
       {/* Media preview */}
       <div
         className="masonry-media-wrapper"
-        // onClick={() => onOpen?.(item)}
-        onClick={() => {
-          console.log("MEDIA CLICKED", item.id);
-          onOpen?.(item);
-        }}
+        onClick={() => onOpen?.(item)}
       >
         <ContentPreviewView
           preview={item.preview}
@@ -45,18 +121,13 @@ function MasonryItem({
         />
       </div>
 
-
       {/* Overlay */}
       <div className="overlay">
         <div className="overlay-top">
-          <Link
-            to={`/review/${item.id}`}
-            className="overlay-btn"
-          >
+          <Link to={`/review/${item.id}`} className="overlay-btn">
             Review
           </Link>
         </div>
-
 
         <div className="overlay-bottom">
           {getTopTags(item.tags).length > 0 ? (
@@ -82,24 +153,59 @@ function MasonryItem({
   );
 }
 
+
+/* -----------------------------------------
+   MasonryGrid
+----------------------------------------- */
+// type Props = {
+//   items: Content[];
+//   onTagClick?: (tagId: string) => void;
+//   onOpen?: (item: Content) => void;
+
+// };
+
+// export default function MasonryGrid({ items, onTagClick }: Props) {
+//   return (
+//     <div className="masonry-grid">
+//       {items.map((item) => (
+//         <MasonryItem
+//           key={item.id}
+//           item={item}
+//           onTagClick={onTagClick}
+//         />
+//       ))}
+//     </div>
+//   );
+// }
+
 /* -----------------------------------------
    MasonryGrid
 ----------------------------------------- */
 type Props = {
   items: Content[];
+  selectedIds: Set<string>;
+  onToggleSelect: (contentId: string) => void;
   onTagClick?: (tagId: string) => void;
   onOpen?: (item: Content) => void;
-
 };
 
-export default function MasonryGrid({ items, onTagClick }: Props) {
+export default function MasonryGrid({
+  items,
+  selectedIds,
+  onToggleSelect,
+  onTagClick,
+  onOpen,
+}: Props) {
   return (
     <div className="masonry-grid">
       {items.map((item) => (
         <MasonryItem
           key={item.id}
           item={item}
+          selected={selectedIds.has(item.id)}
+          onToggleSelect={() => onToggleSelect(item.id)}
           onTagClick={onTagClick}
+          onOpen={onOpen}
         />
       ))}
     </div>

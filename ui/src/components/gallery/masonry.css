@@ -256,3 +256,23 @@
   pointer-events: auto;
   cursor: zoom-in;
 }
+
+.masonry-item.selected {
+  outline: 2px solid #4caf50;
+  outline-offset: 2px;
+}
+
+.select-overlay {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 5;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  cursor: pointer;
+}
