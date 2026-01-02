@@ -1,16 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { TagGroup } from "../../types/tags";
 import TagPill from "./TagPill";
 import "./tag-theme.css";
 
 const COLLAPSED_LIMIT = 6;
-
-type Props = {
-  group: TagGroup;
-  selectedTagIds: string[];
-  onToggleTag: (tagId: string) => void;
-  onCreateTag?: (label: string) => void;
-};
 
 export default function TagGroupSection({
   group,
@@ -19,6 +12,7 @@ export default function TagGroupSection({
   onCreateTag,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [autoExpanded, setAutoExpanded] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newLabel, setNewLabel] = useState("");
 
@@ -26,15 +20,16 @@ export default function TagGroupSection({
     (a, b) => b.usage_count - a.usage_count
   );
 
-  const visibleTags = expanded
-    ? sortedTags
-    : sortedTags.slice(0, COLLAPSED_LIMIT);
-
   const selectedCount = group.tags.filter(t =>
     selectedTagIds.includes(t.id)
   ).length;
 
-  const totalCount = group.tags.length;
+  useEffect(() => {
+    if (!autoExpanded && selectedCount > 0) {
+      setExpanded(true);
+      setAutoExpanded(true);
+    }
+  }, [selectedCount, autoExpanded]);
 
   function submit() {
     if (!newLabel.trim() || !onCreateTag) return;
@@ -44,23 +39,26 @@ export default function TagGroupSection({
   }
 
   return (
-    <div >
-      {/* LEFT */}
-      <div>
-        <div className="tag-group-title">
-          {group.id}
+    <div
+      className={`tag-group ${expanded ? "expanded" : ""} ${selectedCount > 0 ? "has-selected" : ""}`}
+    >
+      <div
+        className="tag-group-title"
+        onClick={() => setExpanded(v => !v)}
+      >
+        <span>{group.label ?? group.id}</span>
 
-          <span className="tag-count">
-            {selectedCount > 0 && (
-              <span className="selected">{selectedCount}</span>
-            )}
-            <span className="total">/ {totalCount}</span>
+        <span className="tag-count">
+          <span className={`selected ${selectedCount === 0 ? "empty" : ""}`}>
+            {selectedCount}
           </span>
-        </div>
+          <span className="total">/ {group.tags.length}</span>
+        </span>
+      </div>
 
-
+      {expanded && (
         <div className="tag-pills">
-          {visibleTags.map((tag) => (
+          {sortedTags.map(tag => (
             <TagPill
               key={tag.id}
               tag={tag}
@@ -69,47 +67,52 @@ export default function TagGroupSection({
             />
           ))}
         </div>
-      </div>
+      )}
 
-      {/* RIGHT */}
-      <div className="tag-actions">
-        {onCreateTag && (
-          <>
-            {!adding ? (
-              <button
-                className="tag-action-btn"
-                onClick={() => setAdding(true)}
-              >
-                + New tag
-              </button>
-            ) : (
-              <input
-                autoFocus
-                className="tag-input"
-                value={newLabel}
-                placeholder="New tag…"
-                onChange={(e) => setNewLabel(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") submit();
-                  if (e.key === "Escape") {
-                    setAdding(false);
-                    setNewLabel("");
-                  }
-                }}
+      {!expanded && selectedCount > 0 && (
+        <div className="tag-pills condensed">
+          {sortedTags
+            .filter(t => selectedTagIds.includes(t.id))
+            .slice(0, COLLAPSED_LIMIT)
+            .map(tag => (
+              <TagPill
+                key={tag.id}
+                tag={tag}
+                selected
+                onToggle={() => onToggleTag(tag.id)}
               />
-            )}
-          </>
-        )}
+            ))}
+        </div>
+      )}
 
-        {sortedTags.length > COLLAPSED_LIMIT && (
-          <button
-            className="tag-expand"
-            onClick={() => setExpanded((e) => !e)}
-          >
-            {expanded ? "Show less ▲" : "Show more ▼"}
-          </button>
-        )}
-      </div>
+      {expanded && onCreateTag && (
+        <div className="tag-actions">
+          {!adding ? (
+            <button
+              className="tag-action-btn subtle"
+              onClick={() => setAdding(true)}
+            >
+              + New tag
+            </button>
+
+          ) : (
+            <input
+              autoFocus
+              className="tag-input"
+              value={newLabel}
+              placeholder="New tag…"
+              onChange={(e) => setNewLabel(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submit();
+                if (e.key === "Escape") {
+                  setAdding(false);
+                  setNewLabel("");
+                }
+              }}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

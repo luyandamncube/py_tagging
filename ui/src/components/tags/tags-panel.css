@@ -1,18 +1,25 @@
 .tags-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  padding: 0 12px; /* ⬅ IMPORTANT */
 }
+
 
 .tags-panel-header {
   display: flex;
   justify-content: space-between;
   color: #aaa;
   font-size: 13px;
+    position: sticky;
+  top: 0;
+  background: linear-gradient(#0f0f0f 80%, transparent);
+  padding-bottom: 8px;
+  z-index: 10;
 }
 
 
-.tag-group.blocked {
+/* .tag-group.blocked {
   border: 1px solid rgba(244, 67, 54, 0.4);
   background: rgba(244, 67, 54, 0.08);
   border-radius: 10px;
@@ -23,4 +30,16 @@
 .tag-group.blocked .group-title {
   color: #f08a82;
   font-weight: 600;
+} */
+
+.tag-search {
+  position: sticky;
+  top: 0;
+  background: #0f0f0f;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #eee;
+  margin-bottom: 12px;
+  z-index: 5;
 }

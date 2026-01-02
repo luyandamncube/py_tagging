@@ -8,9 +8,6 @@ class AssignTags(BaseModel):
 
 class ContentCreate(BaseModel):
     url: str
-    site: str
-    creator: Optional[str]
-    type: str
 
 class TagCreate(BaseModel):
     id: str

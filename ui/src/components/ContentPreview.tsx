@@ -4,11 +4,13 @@ import type { ContentPreview } from "../types/content";
 interface Props {
   preview?: ContentPreview;
   className?: string;
+   disableInteraction?: boolean;
 }
 
 export default function ContentPreviewView({
   preview,
   className,
+  disableInteraction = false
 }: Props) {
   const [failed, setFailed] = useState(false);
 
@@ -43,18 +45,21 @@ export default function ContentPreviewView({
     );
   }
 
-  return (
-    <div className={`${className} masonry-media`}>
-      <img
-        src={src}
-        alt={preview?.title ?? "Content preview"}
-        loading="lazy"
-        onError={(e) => {
-          // IMPORTANT: stop further loading attempts
-          e.currentTarget.onerror = null;
-          setFailed(true);
-        }}
-      />
-    </div>
-  );
+return (
+  <div
+    className={`${className} masonry-media`}
+    style={disableInteraction ? { pointerEvents: "none" } : undefined}
+  >
+    <img
+      src={src}
+      alt={preview?.title ?? "Content preview"}
+      loading="lazy"
+      onError={(e) => {
+        e.currentTarget.onerror = null;
+        setFailed(true);
+      }}
+    />
+  </div>
+);
+
 }

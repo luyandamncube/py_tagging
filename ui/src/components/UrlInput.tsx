@@ -18,7 +18,6 @@ function guessSite(rawUrl: string) {
 export default function UrlInput({ onCreated }: Props) {
   const [url, setUrl] = useState("");
   const [site, setSite] = useState("");
-  const [creator, setCreator] = useState("");
   const [type, setType] = useState<"image" | "video">("image");
 
   const [loading, setLoading] = useState(false);
@@ -37,14 +36,10 @@ export default function UrlInput({ onCreated }: Props) {
       await createContent({
         url: trimmed.startsWith("http") ? trimmed : `https://${trimmed}`,
         site: (site || suggestedSite || "").trim() || "unknown",
-        creator: creator.trim() || "unknown",
         type,
       });
 
       setUrl("");
-      setSite("");
-      setCreator("");
-      setType("image");
 
       onCreated();
     } catch (e: any) {
@@ -67,46 +62,6 @@ export default function UrlInput({ onCreated }: Props) {
           if (e.key === "Enter") handleSubmit();
         }}
       />
-
-      <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 6 }}>
-            Site {suggestedSite ? `(suggested: ${suggestedSite})` : ""}
-          </div>
-          <input
-            value={site}
-            onChange={(e) => setSite(e.target.value)}
-            placeholder="e.g. instagram.com"
-            style={{ width: "100%", padding: 10 }}
-          />
-        </div>
-
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 6 }}>
-            Creator / channel
-          </div>
-          <input
-            value={creator}
-            onChange={(e) => setCreator(e.target.value)}
-            placeholder="e.g. @creatorname"
-            style={{ width: "100%", padding: 10 }}
-          />
-        </div>
-
-        <div style={{ width: 140 }}>
-          <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 6 }}>
-            Type
-          </div>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as "image" | "video")}
-            style={{ width: "100%", padding: 10 }}
-          >
-            <option value="image">image</option>
-            <option value="video">video</option>
-          </select>
-        </div>
-      </div>
 
       <button
         onClick={handleSubmit}

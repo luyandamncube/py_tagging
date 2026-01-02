@@ -88,6 +88,7 @@
   padding: 6px 12px;
   border-radius: 999px;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .overlay-btn:hover {
@@ -174,15 +175,12 @@
 --------------------------------------- */
 
 .masonry-media {
-  position: relative;
   width: 100%;
-
-  /* Default aspect ratio (safe for most images) */
+  display: block;
   aspect-ratio: 1 / 1;
-
-  /* background: #f2f2f2; */
   overflow: hidden;
 }
+
 
 /* Image inside masonry preview */
 .masonry-media img {
@@ -248,4 +246,13 @@
   height: auto;
   object-fit: contain;
   border-radius: 12px;
+}
+
+.masonry-media-wrapper {
+  width: 100%;
+  display: block;
+  position: relative;
+
+  pointer-events: auto;
+  cursor: zoom-in;
 }

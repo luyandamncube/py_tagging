@@ -1,116 +1,104 @@
-/* ---------- Tag containers ---------- */
-
 .tag-group {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 16px;
-  padding: 16px;
-  border-radius: 10px;
-  background: #1a1a1a;
-  border: 1px solid #262626;
-  margin-bottom: 16px;
+  border-bottom: 1px solid #222;
+  padding: 8px 0;
+  margin: 0;
+  background: transparent;
+  position: relative;
+}
+
+.tag-group.has-selected::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 16px;
+  background: #4caf50;
+  border-radius: 2px;
 }
 
 .tag-group-title {
-  font-size: 18px;
+    height: 28px;          /* fixed, not min-height */
+  line-height: 28px;
+  box-sizing: border-box;
+  min-height: 28px;
+  font-size: 14px;
   font-weight: 600;
-  color: #eaeaea;
-  margin-bottom: 12px;
-  text-transform: lowercase;
-}
-
-/* ---------- Pills ---------- */
-
-.tag-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.tag-pill {
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  background: #2a2a2a;
-  color: #ccc;
-  font-size: 13px;
+  color: #ddd;
   cursor: pointer;
-  transition: all 0.15s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.tag-pill:hover {
-  background: #333;
+.tag-group-title::after {
+  content: "▸";
+  font-size: 12px;
+  opacity: 0.6;
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
-.tag-pill.selected {
-  background: #4caf50;
-  color: #000;
-  font-weight: 600;
+.tag-group.expanded .tag-group-title::after {
+  transform: rotate(90deg);
+  opacity: 0.9;
 }
 
-/* ---------- Actions ---------- */
+.tag-group.has-selected .tag-group-title {
+  color: #e6f4ea;
+}
 
+/* --- Count badge --- */
+
+.tag-count .selected {
+  background: #2a3f34;
+  color: #9be7b4;
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-weight: 500;
+  min-width: 20px;
+  text-align: center;
+}
+
+.tag-count .selected.empty {
+  visibility: hidden;
+}
 .tag-actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
+  margin-top: 6px;
+    opacity: 0;
+  transition: opacity 0.12s ease;
 }
 
+
 .tag-action-btn {
-  background: #222;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 6px 10px;
+  background: transparent;
+  border: 1px dashed #2a2a2a;
+  border-radius: 6px;
+  padding: 4px 10px;
   font-size: 12px;
-  color: #bbb;
+  color: #888;
   cursor: pointer;
+  align-self: flex-start;
+  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
 }
 
 .tag-action-btn:hover {
-  background: #2a2a2a;
-  color: #fff;
+  border-color: #4caf50;
+  color: #9be7b4;
+  background: rgba(76, 175, 80, 0.05);
 }
 
 .tag-input {
   width: 160px;
   background: #111;
   border: 1px solid #333;
-  border-radius: 8px;
-  padding: 6px 10px;
+  border-radius: 6px;
+  padding: 4px 8px;
   color: #eee;
-  font-size: 13px;
-}
-
-/* ---------- Expand ---------- */
-
-.tag-expand {
-  background: none;
-  border: none;
-  color: #888;
   font-size: 12px;
-  cursor: pointer;
 }
 
-/* ---------- Tag count badge ---------- */
-
-.tag-count {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #888;
-  margin-left: 8px;
-}
-
-.tag-count .selected {
-  background: #4caf50;
-  color: #000;
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-weight: 600;
-}
-
-.tag-count .total {
-  opacity: 0.7;
+.tag-group:hover .tag-actions {
+  opacity: 1;
 }

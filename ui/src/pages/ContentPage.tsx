@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import MasonryGrid from "../components/gallery/MasonryGrid";
 import TagFilterBar from "../components/filters/TagFilterBar";
+import ContentCarousel from "../components/carousel/ContentCarousel";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE || "http://localhost:8000";
@@ -10,8 +11,6 @@ type ContentItem = {
   id: string;
   url: string;
   type: "image" | "video";
-  site?: string;
-  creator?: string;
   created_at?: string;
   tags?: {
     id: string;
@@ -31,6 +30,19 @@ export default function ContentPage() {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [carouselItem, setCarouselItem] = useState<any | null>(null);
+
+function openCarousel(item: any) {
+  console.log("OPEN CAROUSEL", item.id);
+  setCarouselItem(item);
+  document.body.style.overflow = "hidden";
+}
+
+
+  function closeCarousel() {
+    setCarouselItem(null);
+    document.body.style.overflow = "";
+  }
 
   // Disable right panel
   useEffect(() => {
@@ -103,17 +115,8 @@ export default function ContentPage() {
   }
 
   return (
+  <>
     <div className="page">
-      {/* {selectedTags.size === 0 && (
-        <header className="page-header">
-          <h1>Content</h1>
-          <p>Browse content in the database</p>
-        </header>
-      )} */}
-      {/* <header className="page-header">
-          <h1>Content</h1>
-          <p>Browse content in the database</p>
-        </header> */}
       <TagFilterBar
         tags={tagStats}
         selected={selectedTags}
@@ -123,8 +126,17 @@ export default function ContentPage() {
       <MasonryGrid
         items={filteredItems}
         onTagClick={handleGridTagClick}
+        onOpen={openCarousel}
       />
-
     </div>
-  );
+
+    {carouselItem && (
+      <ContentCarousel
+        item={carouselItem}
+        onClose={closeCarousel}
+      />
+    )}
+  </>
+);
+
 }

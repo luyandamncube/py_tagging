@@ -6,7 +6,7 @@ from app.schemas import TagCreate, AssignTags, EnsureTagRequest
 from app.services.tag_search import search_tags
 from app.services.tag_ensure import ensure_tag
 from app.services.tag_validation import (
-    validate_tag_assignment,
+    validate_tag_assignment_delta,
     TagValidationError,
 )
 
@@ -39,46 +39,19 @@ def create_tag(payload: TagCreate):
 
     return {"status": "ok", "tag_id": payload.id}
 
-
 @router.post("/assign")
 def assign_tags(payload: AssignTags):
     """
-    Assign one or more tags to a content item,
-    enforcing tag group min/max constraints.
+    Assign one or more tags to a content item.
+    Enforces tag group constraints incrementally (e.g. max limits).
     """
     con = get_db()
 
     # -------------------------------
-    # 0. Ensure all tags exist
-    # -------------------------------
-    placeholders = ",".join("?" * len(payload.tag_ids))
-    rows = con.execute(
-        f"""
-        SELECT id
-        FROM tag
-        WHERE id IN ({placeholders})
-        """,
-        payload.tag_ids,
-    ).fetchall()
-
-    existing_ids = {r[0] for r in rows}
-    missing_ids = set(payload.tag_ids) - existing_ids
-
-    if missing_ids:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Unknown tag(s): "
-                + ", ".join(sorted(missing_ids))
-                + ". Create them first via /tags/ensure."
-            ),
-        )
-
-    # -------------------------------
-    # 1. Validate group constraints
+    # 1. Validate group constraints (incremental)
     # -------------------------------
     try:
-        validate_tag_assignment(
+        validate_tag_assignment_delta(
             content_id=payload.content_id,
             tag_ids=payload.tag_ids,
         )
@@ -103,7 +76,6 @@ def assign_tags(payload: AssignTags):
                 (payload.content_id, tag_id),
             ).fetchall()
 
-            # Only update usage if the assignment was new
             if rows:
                 con.execute(
                     """
@@ -114,7 +86,6 @@ def assign_tags(payload: AssignTags):
                     """,
                     (now, tag_id),
                 )
-
 
         con.execute("COMMIT")
 

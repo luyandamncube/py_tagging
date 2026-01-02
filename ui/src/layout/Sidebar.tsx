@@ -17,7 +17,7 @@ export default function Sidebar({ mobileOpen, onNavigate }: Props) {
           onClick={onNavigate}
           className={({ isActive }) => `item ${isActive ? "active" : ""}`}
         >
-          Bulk Intake
+          Bulk URL Intake
         </NavLink>
         <NavLink
           to="/review"

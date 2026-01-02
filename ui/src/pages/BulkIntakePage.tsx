@@ -1,9 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 
-import TagsPanel from "../components/tags/TagsPanel";
-import { useTagGroupsWithTags } from "../hooks/useTagGroupsWithTags";
-import { ensureTag } from "../api/tags";
+import TagsPanelShell from "../components/tags/TagsPanelShell";
 import "./bulk-intake.css";
 
 const API_BASE =
@@ -25,27 +23,17 @@ type LayoutContext = {
 
 export default function BulkIntakePage() {
   const { setRightPanel } = useOutletContext<LayoutContext>();
+  // const [tagsOpen, setTagsOpen] = useState(true);
 
   const [text, setText] = useState("");
-  const [site, setSite] = useState("");
-  const [creator, setCreator] = useState("");
-  const [type, setType] = useState("image");
-
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [dbDuplicates, setDbDuplicates] = useState<Set<string>>(new Set());
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [checkingDb, setCheckingDb] = useState(false);
 
-  const {
-    groups: tagGroups,
-    loading: tagsLoading,
-    error: tagsError,
-    reload: reloadTags,
-  } = useTagGroupsWithTags();
-
   // --------------------------------------------------
-  // Tag handlers (must be defined before useEffect)
+  // Tag selection (shared)
   // --------------------------------------------------
 
   function toggleTag(tagId: string) {
@@ -55,11 +43,6 @@ export default function BulkIntakePage() {
         : [...prev, tagId]
     );
   }
-
-  const handleCreateTag = async (groupId: string, label: string) => {
-    await ensureTag(groupId, label);
-    reloadTags();
-  };
 
   // --------------------------------------------------
   // URL parsing / validation
@@ -132,30 +115,23 @@ export default function BulkIntakePage() {
   }, [text]);
 
   // --------------------------------------------------
-  // Right panel wiring (desktop only)
+  // Right panel wiring (desktop)
   // --------------------------------------------------
 
-    useEffect(() => {
-      setRightPanel(
-        <TagsPanel
-          groups={tagGroups}
-          loading={tagsLoading}
-          selectedTagIds={selectedTagIds}
-          onToggleTag={toggleTag}
-          onCreateTag={handleCreateTag}
-        />
-      );
-    }, [
-      setRightPanel,
-      tagGroups,
-      tagsLoading,
-      selectedTagIds,
-    ]);
+  useEffect(() => {
+    setRightPanel(
+      <TagsPanelShell
+        selectedTagIds={selectedTagIds}
+        onToggleTag={toggleTag}
+        // tagsOpen={tagsOpen}
+        // setTagsOpen={setTagsOpen}
+      />
+    );
+  // }, [setRightPanel, selectedTagIds, tagsOpen]);
+    }, [setRightPanel, selectedTagIds]);
 
   useEffect(() => {
-    return () => {
-      setRightPanel(null);
-    };
+    return () => setRightPanel(null);
   }, [setRightPanel]);
 
   // --------------------------------------------------
@@ -170,9 +146,6 @@ export default function BulkIntakePage() {
 
     const items = validUrls.map((l) => ({
       url: l.url,
-      site: site || null,
-      creator: creator || null,
-      type,
       tag_ids: selectedTagIds,
     }));
 
@@ -203,36 +176,6 @@ export default function BulkIntakePage() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <h1>Bulk URL Intake</h1>
-        <p>Add multiple items and apply shared metadata & tags.</p>
-      </header>
-
-      {/* Metadata */}
-      <section className="card">
-        <div className="form-row">
-          <div className="form-field">
-            <label>Site</label>
-            <input value={site} onChange={(e) => setSite(e.target.value)} />
-          </div>
-          <div className="form-field">
-            <label>Creator</label>
-            <input
-              value={creator}
-              onChange={(e) => setCreator(e.target.value)}
-            />
-          </div>
-          <div className="form-field">
-            <label>Type</label>
-            <select value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="image">Image</option>
-              <option value="video">Video</option>
-            </select>
-          </div>
-        </div>
-      </section>
-
-      {/* URLs */}
       <section className="card">
         <div className="card-header">
           <span>URLs</span>
@@ -269,16 +212,15 @@ export default function BulkIntakePage() {
       {/* Mobile-only tags */}
       <section className="card">
         <div className="tags-inline">
-          <TagsPanel
-            groups={tagGroups}
-            loading={tagsLoading}
+          <TagsPanelShell
             selectedTagIds={selectedTagIds}
             onToggleTag={toggleTag}
-            onCreateTag={handleCreateTag}
+            // tagsOpen={tagsOpen}
+            // setTagsOpen={setTagsOpen}
           />
         </div>
       </section>
-      {/* Actions */}
+
       <footer className="page-actions">
         <div className="summary">
           Valid {validUrls.length} · Invalid {invalidCount}
@@ -294,7 +236,6 @@ export default function BulkIntakePage() {
       </footer>
 
       {result && <div className="result">{result}</div>}
-      {tagsError && <div className="error">{tagsError}</div>}
     </div>
   );
 }

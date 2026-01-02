@@ -28,9 +28,6 @@ export interface ContentPreview {
 export interface Content {
   id: string
   url: string
-
-  site?: string | null
-  creator?: string | null
   type: string
   status: string
   created_at: string

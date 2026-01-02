@@ -1,16 +1,25 @@
 from fastapi import APIRouter, HTTPException
 from uuid import uuid4
+from datetime import datetime
+
 from app.db import get_db
 from app.schemas import ContentCreate
-from app.services.content_validation import validate_content
 from app.services.content_snapshot import get_content_snapshot
 from app.db.snapshot import snapshot_db
 from app.services.drive_sync import enqueue_drive_sync, LAST_SYNC_STATUS
 from app.services.content_preview import build_and_store_preview
-
+from app.services.tag_validation import (
+    validate_content_completeness,
+    validate_content_completeness_detailed,
+    TagValidationError,
+)
 
 router = APIRouter(prefix="/content", tags=["content"])
 
+
+# ------------------------------------------------------------------
+# CREATE SINGLE CONTENT (draft)
+# ------------------------------------------------------------------
 
 @router.post("/")
 def create_content(payload: ContentCreate):
@@ -19,10 +28,15 @@ def create_content(payload: ContentCreate):
 
     con.execute(
         """
-        INSERT INTO content (id, url, site, creator, type, created_at)
-        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO content (
+            id,
+            url,
+            created_at,
+            status
+        )
+        VALUES (?, ?, CURRENT_TIMESTAMP, 'draft')
         """,
-        (content_id, payload.url, payload.site, payload.creator, payload.type),
+        (content_id, payload.url),
     )
 
     # --------------------------------------------------
@@ -34,12 +48,15 @@ def create_content(payload: ContentCreate):
             source_url=payload.url,
         )
     except Exception as e:
-        # IMPORTANT: never fail content creation
+        # Never fail content creation
         print(f"⚠️ Preview build failed for {payload.url}: {e}")
 
     return {"id": content_id}
 
 
+# ------------------------------------------------------------------
+# GET NEXT INCOMPLETE CONTENT
+# ------------------------------------------------------------------
 
 @router.get("/next")
 def get_next_content():
@@ -50,9 +67,6 @@ def get_next_content():
         SELECT
             id,
             url,
-            site,
-            creator,
-            type,
             created_at
         FROM content
         WHERE status != 'complete'
@@ -67,16 +81,25 @@ def get_next_content():
     return {
         "id": row[0],
         "url": row[1],
-        "site": row[2],
-        "creator": row[3],
-        "type": row[4],
-        "created_at": row[5],
+        "created_at": row[2],
     }
 
+
+# ------------------------------------------------------------------
+# COMPLETE / FINALISE CONTENT (STRICT)
+# ------------------------------------------------------------------
 
 @router.post("/{content_id}/complete")
 def complete_content(content_id: str):
     con = get_db()
+
+    try:
+        validate_content_completeness(content_id)
+    except TagValidationError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Content incomplete: {e}",
+        )
 
     res = con.execute(
         """
@@ -96,13 +119,23 @@ def complete_content(content_id: str):
     }
 
 
+# ------------------------------------------------------------------
+# CONTENT COMPLETENESS VALIDATION (UI-FRIENDLY)
+# ------------------------------------------------------------------
+
+
+
 @router.get("/{content_id}/validation")
 def get_content_validation(content_id: str):
     """
-    Return tag-group validation status for a content item.
+    Return structured per-group completeness validation for a content item.
     """
-    return validate_content(content_id)
+    return validate_content_completeness_detailed(content_id)
 
+
+# ------------------------------------------------------------------
+# GET FULL CONTENT SNAPSHOT
+# ------------------------------------------------------------------
 
 @router.get("/{content_id}")
 def get_content(content_id: str):
@@ -115,7 +148,7 @@ def get_content(content_id: str):
 
 
 # ------------------------------------------------------------------
-# BULK CREATE (with snapshot + async Drive sync)
+# BULK CREATE (DRAFT + TAGS + SNAPSHOT + ASYNC DRIVE SYNC)
 # ------------------------------------------------------------------
 
 @router.post("/bulk")
@@ -133,26 +166,18 @@ def create_content_bulk(payload: dict):
         tag_ids = item.get("tag_ids", [])
 
         try:
-            # 1️⃣ Insert content
+            # 1️⃣ Insert content (draft)
             con.execute(
                 """
                 INSERT INTO content (
                     id,
                     url,
-                    site,
-                    creator,
-                    type,
-                    created_at
+                    created_at,
+                    status
                 )
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                VALUES (?, ?, CURRENT_TIMESTAMP, 'draft')
                 """,
-                (
-                    content_id,
-                    item["url"],
-                    item.get("site"),
-                    item.get("creator"),
-                    item.get("type", "image"),
-                ),
+                (content_id, item["url"]),
             )
 
             # 2️⃣ Insert content ↔ tag relations
@@ -169,7 +194,7 @@ def create_content_bulk(payload: dict):
                 )
 
             # --------------------------------------------------
-            # 🖼️ Build preview (best-effort, non-blocking)
+            # 🖼️ Build preview (best-effort)
             # --------------------------------------------------
             try:
                 build_and_store_preview(
@@ -177,7 +202,6 @@ def create_content_bulk(payload: dict):
                     source_url=item["url"],
                 )
             except Exception:
-                # Never fail bulk insert because of preview issues
                 pass
 
             created.append(content_id)
@@ -189,6 +213,7 @@ def create_content_bulk(payload: dict):
     # --------------------------------------------------------------
     # 📸 Snapshot + async Google Drive sync
     # --------------------------------------------------------------
+
     backup_scheduled = False
     snapshot_name = None
 
@@ -211,6 +236,9 @@ def create_content_bulk(payload: dict):
     }
 
 
+# ------------------------------------------------------------------
+# CHECK URL DUPLICATES
+# ------------------------------------------------------------------
 
 @router.post("/check-duplicates")
 def check_duplicates(payload: dict):
@@ -232,6 +260,11 @@ def check_duplicates(payload: dict):
     return {
         "existing": [r[0] for r in rows]
     }
+
+
+# ------------------------------------------------------------------
+# PREVIEW REBUILD
+# ------------------------------------------------------------------
 
 @router.post("/{content_id}/preview/rebuild")
 def rebuild_preview(content_id: str):

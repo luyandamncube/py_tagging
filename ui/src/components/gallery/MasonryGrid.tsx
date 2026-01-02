@@ -21,17 +21,30 @@ function getTopTags(tags: Content["tags"], limit = 3) {
 function MasonryItem({
   item,
   onTagClick,
+  onOpen,
 }: {
   item: Content;
   onTagClick?: (tagId: string) => void;
+  onOpen?: (item: Content) => void;
 }) {
   return (
     <div className="masonry-item">
       {/* Media preview */}
-      <ContentPreviewView
-        preview={item.preview}
-        className="masonry-media"
-      />
+      <div
+        className="masonry-media-wrapper"
+        // onClick={() => onOpen?.(item)}
+        onClick={() => {
+          console.log("MEDIA CLICKED", item.id);
+          onOpen?.(item);
+        }}
+      >
+        <ContentPreviewView
+          preview={item.preview}
+          className="masonry-media"
+          disableInteraction
+        />
+      </div>
+
 
       {/* Overlay */}
       <div className="overlay">
@@ -43,7 +56,7 @@ function MasonryItem({
             Review
           </Link>
         </div>
-        
+
 
         <div className="overlay-bottom">
           {getTopTags(item.tags).length > 0 ? (
@@ -75,6 +88,8 @@ function MasonryItem({
 type Props = {
   items: Content[];
   onTagClick?: (tagId: string) => void;
+  onOpen?: (item: Content) => void;
+
 };
 
 export default function MasonryGrid({ items, onTagClick }: Props) {

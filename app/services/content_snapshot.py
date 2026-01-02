@@ -10,7 +10,7 @@ def get_content_snapshot(content_id: str):
     # -------------------------
     row = con.execute(
         """
-        SELECT id, url, site, creator, type, status, created_at
+        SELECT id, url, status, created_at
         FROM content
         WHERE id = ?
         """,
@@ -23,11 +23,8 @@ def get_content_snapshot(content_id: str):
     content = {
         "id": row[0],
         "url": row[1],
-        "site": row[2],
-        "creator": row[3],
-        "type": row[4],
-        "status": row[5],
-        "created_at": row[6],
+        "status": row[2],
+        "created_at": row[3],
     }
 
     # -------------------------
@@ -136,9 +133,6 @@ def list_content_snapshots():
         SELECT
             c.id,
             c.url,
-            c.site,
-            c.creator,
-            c.type,
             c.status,
             c.created_at,
             cp.preview_status,
@@ -160,15 +154,12 @@ def list_content_snapshots():
         content = {
             "id": row[0],
             "url": row[1],
-            "site": row[2],
-            "creator": row[3],
-            "type": row[4],
-            "status": row[5],
-            "created_at": row[6],
+            "status": row[2],
+            "created_at": row[3],
             "preview": {
-                "status": row[7] or "pending",
-                "url": row[8],
-                "url_normalized" : row[9]
+                "status": row[4] or "pending",
+                "url": row[5],
+                "url_normalized" : row[6]
             },
         }
 

@@ -1,39 +1,34 @@
 import { useEffect, useState } from "react";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+const API_BASE =
+  import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
-interface ValidationResult {
+export type GroupValidation = {
+  group_id: string;
+  min_required: number;
+  current: number;
   valid: boolean;
-  summary: {
-    missing_required: number;
-    over_limit: number;
-  };
-}
+};
 
-export function useContentValidation(contentId: string | null) {
-  const [validation, setValidation] = useState<ValidationResult | null>(null);
+export type ContentValidation = {
+  valid: boolean;
+  groups: GroupValidation[];
+};
+
+export function useContentValidation(contentId?: string) {
+  const [validation, setValidation] = useState<ContentValidation | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!contentId) {
-      setValidation(null);
-      return;
-    }
+    if (!contentId) return;
 
     setLoading(true);
 
     fetch(`${API_BASE}/content/${contentId}/validation`)
-      .then((res) => res.json())
-      .then((data) => {
-        setValidation(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      .then((r) => r.json())
+      .then(setValidation)
+      .finally(() => setLoading(false));
   }, [contentId]);
 
-  return {
-    validation,
-    loading,
-  };
+  return { validation, loading };
 }
-

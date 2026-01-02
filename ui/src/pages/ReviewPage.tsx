@@ -6,6 +6,7 @@ import { ensureTag } from "../api/tags";
 import ValidationPanel from "../components/validation/ValidationPanel";
 import ContentPreviewView from "../components/ContentPreview";
 import "./review.css";
+import TagsPanelShell from "../components/tags/TagsPanelShell";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE || "http://localhost:8000";
@@ -14,8 +15,6 @@ type ReviewItem = {
   id: string;
   url: string;
   type: "image" | "video";
-  site?: string;
-  creator?: string;
   tags?: { id: string }[];
   preview?: any; // ← ADD THIS
 };
@@ -26,7 +25,7 @@ type LayoutContext = {
 
 export default function ReviewPage() {
   const { setRightPanel } = useOutletContext<LayoutContext>();
-
+  // const [tagsOpen, setTagsOpen] = useState(true);
   const [item, setItem] = useState<ReviewItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
@@ -156,52 +155,38 @@ export default function ReviewPage() {
   // Validation fetch
   // --------------------------------------------------
 
-  async function loadValidation(contentId: string) {
-    setValidationLoading(true);
+ async function loadValidation(contentId: string) {
+  setValidationLoading(true);
 
-    try {
-      const res = await fetch(
-        `${API_BASE}/content/${contentId}/validation`
-      );
+  try {
+    const res = await fetch(
+      `${API_BASE}/content/${contentId}/validation`
+    );
 
-      if (!res.ok) {
-        setValidationIssues([]);
-        return;
-      }
-
-      const data = await res.json();
-
-      const issues =
-        data.groups
-          ?.filter((g: any) => g.status !== "ok")
-          .map((g: any) => {
-            let level: "warning" | "error" = "warning";
-
-            if (g.status === "over_limit") {
-              level = "error";
-            }
-
-            if (g.status === "missing" && g.min > 0) {
-              level = "error";
-            }
-
-            return {
-              level,
-              groupId: g.id,
-              message:
-                g.status === "missing"
-                  ? `Missing tags for "${g.id}" (min ${g.min})`
-                  : g.status === "over_limit"
-                    ? `Too many tags for "${g.id}" (max ${g.max})`
-                    : `Issue in "${g.id}"`,
-            };
-          }) || [];
-
-      setValidationIssues(issues);
-    } finally {
-      setValidationLoading(false);
+    if (!res.ok) {
+      setValidationIssues([]);
+      return;
     }
+
+    const data = await res.json();
+
+    const issues =
+      data.groups
+        ?.filter((g: any) => !g.valid)
+        .map((g: any) => {
+          return {
+            level: "error" as const,
+            groupId: g.group_id,
+            message: `Missing required tags for "${g.group_id}" (${g.current}/${g.min_required})`,
+          };
+        }) || [];
+
+    setValidationIssues(issues);
+  } finally {
+    setValidationLoading(false);
   }
+}
+
 
 
   useEffect(() => {
@@ -220,15 +205,12 @@ export default function ReviewPage() {
           loading={validationLoading}
           issues={validationIssues}
         />
-        <TagsPanel
-          groups={tagGroups}
-          loading={tagsLoading}
+        <TagsPanelShell
           selectedTagIds={selectedTagIds}
           onToggleTag={toggleTag}
-          onCreateTag={handleCreateTag}
-          blockedGroupIds={blockingGroupIds}
+        // tagsOpen={tagsOpen}
+        // setTagsOpen={setTagsOpen}
         />
-
       </>
     );
   }, [
@@ -320,23 +302,19 @@ export default function ReviewPage() {
 
         {/* ✅ Mobile-only tags MUST be inside page-content */}
         <section className="card tags-inline">
-          <TagsPanel
-            groups={tagGroups}
-            loading={tagsLoading}
+          <TagsPanelShell
             selectedTagIds={selectedTagIds}
             onToggleTag={toggleTag}
-            onCreateTag={handleCreateTag}
-            blockedGroupIds={blockingGroupIds}
+          // tagsOpen={tagsOpen}
+          // setTagsOpen={setTagsOpen}
           />
         </section>
       </div>
 
       {/* Footer stays fixed */}
       <footer className="page-actions">
-                {/* Metadata */}
+        {/* Metadata */}
         <section className="card">
-          <div><strong>Site:</strong> {item.site || "—"}</div>
-          <div><strong>Creator:</strong> {item.creator || "—"}</div>
           <div><strong>ID:</strong> {item.id}</div>
         </section>
         <button
