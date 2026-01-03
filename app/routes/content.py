@@ -3,7 +3,10 @@ from uuid import uuid4
 from datetime import datetime
 
 from app.db import get_db
-from app.schemas import ContentCreate
+from app.schemas import (
+    ContentCreate,
+    ExpandRequest
+)
 from app.services.content_snapshot import get_content_snapshot
 from app.db.snapshot import snapshot_db
 from app.services.drive_sync import enqueue_drive_sync, LAST_SYNC_STATUS
@@ -13,6 +16,11 @@ from app.services.tag_validation import (
     validate_content_completeness_detailed,
     TagValidationError,
 )
+
+from fastapi import APIRouter
+from pydantic import BaseModel
+from typing import List
+from app.services.content_expand import expand_urls
 
 router = APIRouter(prefix="/content", tags=["content"])
 
@@ -31,12 +39,13 @@ def create_content(payload: ContentCreate):
         INSERT INTO content (
             id,
             url,
+            source_url,
             created_at,
             status
         )
-        VALUES (?, ?, CURRENT_TIMESTAMP, 'draft')
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP, 'draft')
         """,
-        (content_id, payload.url),
+        (content_id, payload.url, payload.url),
     )
 
     # --------------------------------------------------
@@ -165,6 +174,9 @@ def create_content_bulk(payload: dict):
         content_id = str(uuid4())
         tag_ids = item.get("tag_ids", [])
 
+        url = item["url"]
+        source_url = item.get("source_url") or url
+
         try:
             # 1️⃣ Insert content (draft)
             con.execute(
@@ -172,12 +184,13 @@ def create_content_bulk(payload: dict):
                 INSERT INTO content (
                     id,
                     url,
+                    source_url,
                     created_at,
                     status
                 )
-                VALUES (?, ?, CURRENT_TIMESTAMP, 'draft')
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP, 'draft')
                 """,
-                (content_id, item["url"]),
+                (content_id, url, source_url),
             )
 
             # 2️⃣ Insert content ↔ tag relations
@@ -199,8 +212,9 @@ def create_content_bulk(payload: dict):
             try:
                 build_and_store_preview(
                     content_id=content_id,
-                    source_url=item["url"],
+                    source_url=url,
                 )
+
             except Exception:
                 pass
 
@@ -242,17 +256,60 @@ def create_content_bulk(payload: dict):
 
 @router.post("/check-duplicates")
 def check_duplicates(payload: dict):
+    con = get_db()
+
+    # --------------------------------------------------
+    # Case 1: Expanded items (url + source_url)
+    # --------------------------------------------------
+    items = payload.get("items")
+    if items:
+        urls = []
+        sources = []
+
+        for item in items:
+            url = item.get("url")
+            source_url = item.get("source_url")
+
+            if url and source_url:
+                urls.append(url)
+                sources.append(source_url)
+
+        if not urls:
+            return {"existing": []}
+
+        placeholders = ",".join("?" * len(urls))
+
+        rows = con.execute(
+            f"""
+            SELECT url, source_url
+            FROM content
+            WHERE url IN ({placeholders})
+              AND source_url IN ({placeholders})
+            """,
+            (*urls, *sources),
+        ).fetchall()
+
+        return {
+            "existing": [
+                {"url": r[0], "source_url": r[1]}
+                for r in rows
+            ]
+        }
+
+    # --------------------------------------------------
+    # Case 2: Root URL check (legacy behavior)
+    # --------------------------------------------------
     urls = payload.get("urls", [])
     if not urls:
         return {"existing": []}
 
-    con = get_db()
+    placeholders = ",".join("?" * len(urls))
 
     rows = con.execute(
         f"""
         SELECT url
         FROM content
-        WHERE url IN ({",".join("?" * len(urls))})
+        WHERE url IN ({placeholders})
         """,
         urls,
     ).fetchall()
@@ -260,6 +317,7 @@ def check_duplicates(payload: dict):
     return {
         "existing": [r[0] for r in rows]
     }
+
 
 
 # ------------------------------------------------------------------
@@ -334,4 +392,35 @@ def export_content(payload: dict):
     return {
         "content": "\n".join(urls),
         "content_type": "text/plain",
+    }
+
+@router.post("/delete")
+def delete_content_bulk(payload: dict):
+    content_ids = payload.get("content_ids", [])
+
+    if not content_ids:
+        raise HTTPException(status_code=400, detail="No content IDs provided")
+
+    con = get_db()
+
+    placeholders = ",".join("?" * len(content_ids))
+
+    res = con.execute(
+        f"""
+        UPDATE content
+        SET status = 'deleted'
+        WHERE id IN ({placeholders})
+        """,
+        content_ids,
+    )
+
+    return {
+        "status": "ok",
+        "deleted": res.rowcount,
+    }
+
+@router.post("/expand")
+def expand_content(req: ExpandRequest):
+    return {
+        "results": expand_urls(req.urls)
     }

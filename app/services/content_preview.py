@@ -2,12 +2,30 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, urlunparse
 from datetime import datetime
-from app.db import get_db
 
+from app.db import get_db
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; PicVidTags/1.0)"
 }
+
+IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp", ".gif")
+VIDEO_EXTENSIONS = (".mp4", ".webm", ".mov")
+
+
+# --------------------------------------------------
+# Utilities
+# --------------------------------------------------
+
+def is_image_url(url: str) -> bool:
+    path = urlparse(url).path.lower()
+    return path.endswith(IMAGE_EXTENSIONS)
+
+
+def is_video_url(url: str) -> bool:
+    path = urlparse(url).path.lower()
+    return path.endswith(VIDEO_EXTENSIONS)
+
 
 def normalize_image_url(url: str | None) -> str | None:
     """
@@ -20,6 +38,7 @@ def normalize_image_url(url: str | None) -> str | None:
     parsed = urlparse(url)
     return urlunparse(parsed._replace(query=""))
 
+
 def _get_meta(soup, *, prop=None, name=None):
     if prop:
         tag = soup.find("meta", property=prop)
@@ -31,14 +50,57 @@ def _get_meta(soup, *, prop=None, name=None):
     return tag["content"].strip() if tag and tag.get("content") else None
 
 
+# --------------------------------------------------
+# Preview extraction
+# --------------------------------------------------
+
 def extract_preview_from_url(url: str) -> dict:
     """
-    Extract preview metadata from a webpage using OG / Twitter tags.
-    HTML-only, no JS execution.
+    Resolve preview metadata for a URL.
+
+    - Direct image/video URLs short-circuit
+    - HTML pages use OG / Twitter metadata
     """
 
+    # --------------------------------------------------
+    # 1️⃣ Direct image URL
+    # --------------------------------------------------
+    if is_image_url(url):
+        return {
+            "preview_type": "image",
+            "preview_url": url,
+            "preview_url_normalized": normalize_image_url(url),
+            "title": None,
+            "description": None,
+        }
+
+    # --------------------------------------------------
+    # 2️⃣ Direct video URL
+    # --------------------------------------------------
+    if is_video_url(url):
+        return {
+            "preview_type": "video",
+            "preview_url": url,
+            "preview_url_normalized": None,
+            "title": None,
+            "description": None,
+        }
+
+    # --------------------------------------------------
+    # 3️⃣ HTML page
+    # --------------------------------------------------
     r = requests.get(url, headers=HEADERS, timeout=10)
     r.raise_for_status()
+
+    content_type = r.headers.get("Content-Type", "")
+    if "text/html" not in content_type:
+        return {
+            "preview_type": "unknown",
+            "preview_url": None,
+            "preview_url_normalized": None,
+            "title": None,
+            "description": None,
+        }
 
     soup = BeautifulSoup(r.text, "html.parser")
 
@@ -64,36 +126,50 @@ def extract_preview_from_url(url: str) -> dict:
         or _get_meta(soup, name="description")
     )
 
-    preview_type = "unknown"
-    preview_url = None
-    preview_url_normalized = None
-
     if video:
-        preview_type = "video"
-        preview_url = urljoin(url, video)
+        return {
+            "preview_type": "video",
+            "preview_url": urljoin(url, video),
+            "preview_url_normalized": None,
+            "title": title,
+            "description": description,
+        }
 
-    elif image:
-        preview_type = "image"
+    if image:
         preview_url = urljoin(url, image)
-        preview_url_normalized = normalize_image_url(preview_url)
-
-    else:
-        preview_type = "page"
+        return {
+            "preview_type": "image",
+            "preview_url": preview_url,
+            "preview_url_normalized": normalize_image_url(preview_url),
+            "title": title,
+            "description": description,
+        }
 
     return {
-        "preview_type": preview_type,
-        "preview_url": preview_url,
-        "preview_url_normalized": preview_url_normalized,
+        "preview_type": "page",
+        "preview_url": None,
+        "preview_url_normalized": None,
         "title": title,
         "description": description,
     }
+
+
+# --------------------------------------------------
+# DB integration
+# --------------------------------------------------
 
 def build_and_store_preview(content_id: str, source_url: str) -> dict:
     con = get_db()
 
     try:
         preview = extract_preview_from_url(source_url)
-        status = "ready"
+
+        status = (
+            "ready"
+            if preview["preview_type"] != "unknown"
+            else "failed"
+        )
+
     except Exception:
         preview = {
             "preview_type": "unknown",

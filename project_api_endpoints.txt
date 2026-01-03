@@ -45,6 +45,16 @@ POST
 /content/export
 Export Content
 
+
+POST
+/content/delete
+Delete Content Bulk
+
+
+POST
+/content/content/expand
+Expand Content
+
 tags
 
 

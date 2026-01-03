@@ -60,3 +60,17 @@
   cursor: not-allowed;
 }
 
+.danger-btn {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #5c2b2b;
+  background: #2a1515;
+  color: #ffb4b4;
+  cursor: pointer;
+}
+
+.danger-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

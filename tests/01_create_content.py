@@ -17,9 +17,6 @@ def main():
     # post 1
     payload = {
         "url": "https://example.com/test.jpg",
-        "site": "example",
-        "creator": "tester",
-        "type": "image",
     }
 
     url = f"{API_BASE}/content/"
@@ -38,9 +35,6 @@ def main():
     # post 2 
     payload = {
         "url": "https://example.com/test2.jpg",
-        "site": "example2",
-        "creator": "tester2",
-        "type": "image",
     }
 
     url = f"{API_BASE}/content/"

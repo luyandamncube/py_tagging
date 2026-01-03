@@ -11,6 +11,7 @@ type ContentItem = {
   id: string;
   url: string;
   type: "image" | "video";
+  status?: string;
   created_at?: string;
   tags?: {
     id: string;
@@ -19,6 +20,7 @@ type ContentItem = {
     usage_count?: number;
   }[];
 };
+
 
 type LayoutContext = {
   setRightPanel: (node: React.ReactNode | null) => void;
@@ -33,10 +35,14 @@ export default function ContentPage() {
   // const [carouselItem, setCarouselItem] = useState<any | null>(null);
   const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
 
-
   const [selectedContentIds, setSelectedContentIds] = useState<Set<string>>(
     new Set()
   );
+
+  const visibleItems = items.filter(
+    (item) => item.status !== "deleted"
+  );
+
 
 
   function downloadFile(content: string, filename: string, type: string) {
@@ -126,24 +132,55 @@ export default function ContentPage() {
   }, [setRightPanel]);
 
   // Load content
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(`${API_BASE}/debug/content`);
-        const data = await res.json();
-        setItems(data);
-      } finally {
-        setLoading(false);
-      }
+  async function loadContent() {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/debug/content`);
+      const data = await res.json();
+      setItems(data);
+    } finally {
+      setLoading(false);
     }
-    load();
+  }
+
+  useEffect(() => {
+    loadContent();
   }, []);
+  async function deleteSelected() {
+    if (selectedContentIds.size === 0) return;
+
+    const confirmed = window.confirm(
+      `Delete ${selectedContentIds.size} selected item(s)?`
+    );
+
+    if (!confirmed) return;
+
+    const res = await fetch(`${API_BASE}/content/delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content_ids: Array.from(selectedContentIds),
+      }),
+    });
+
+    if (!res.ok) {
+      alert("Failed to delete items");
+      return;
+    }
+
+    // Clear selection
+    setSelectedContentIds(new Set());
+
+    // Reload grid
+    await loadContent();
+  }
+
 
   // Compute tag popularity
   const tagStats = useMemo(() => {
     const map = new Map<string, { id: string; label: string; count: number }>();
 
-    items.forEach((item) => {
+    visibleItems.forEach((item) => {
       item.tags?.forEach((tag) => {
         const entry = map.get(tag.id);
         if (!entry) {
@@ -163,11 +200,24 @@ export default function ContentPage() {
 
   // Filter items
   const filteredItems = useMemo(() => {
-    if (selectedTags.size === 0) return items;
-    return items.filter((item) =>
+    if (selectedTags.size === 0) return visibleItems;
+
+    return visibleItems.filter((item) =>
       item.tags?.some((t) => selectedTags.has(t.id))
     );
-  }, [items, selectedTags]);
+  }, [visibleItems, selectedTags]);
+  
+  useEffect(() => {
+    setSelectedContentIds((prev) => {
+      const next = new Set(
+        [...prev].filter((id) =>
+          visibleItems.some((item) => item.id === id)
+        )
+      );
+      return next;
+    });
+  }, [visibleItems]);
+
 
   function toggleFilter(tagId: string) {
     setSelectedTags((prev) => {
@@ -228,6 +278,15 @@ export default function ContentPage() {
             >
               Export selected ({selectedContentIds.size})
             </button>
+
+            <button
+              className="danger-btn"
+              disabled={selectedContentIds.size === 0}
+              onClick={deleteSelected}
+            >
+              Delete selected ({selectedContentIds.size})
+            </button>
+
           </div>
 
 
@@ -239,11 +298,6 @@ export default function ContentPage() {
           />
 
         </div>
-        {/* <MasonryGrid
-          items={filteredItems}
-          onTagClick={handleGridTagClick}
-          onOpen={openCarousel}
-        /> */}
         <MasonryGrid
           items={filteredItems}
           selectedIds={selectedContentIds}

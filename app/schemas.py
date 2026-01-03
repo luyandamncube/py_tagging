@@ -8,11 +8,7 @@ class AssignTags(BaseModel):
 
 class ContentCreate(BaseModel):
     url: str
-
-class TagCreate(BaseModel):
-    id: str
-    label: str
-    category: str
+    source_url: Optional[str] = None
 
 class TagCreate(BaseModel):
     id: str
@@ -23,3 +19,6 @@ class TagCreate(BaseModel):
 class EnsureTagRequest(BaseModel):
     group_id: str
     label: str
+
+class ExpandRequest(BaseModel):
+    urls: List[str]

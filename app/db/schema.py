@@ -21,6 +21,7 @@ def init_schema(con):
         CREATE TABLE IF NOT EXISTS content (
             id TEXT PRIMARY KEY,
             url TEXT,
+            source_url TEXT,
             status TEXT DEFAULT 'new',
             created_at TIMESTAMP
         )

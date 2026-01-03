@@ -137,3 +137,130 @@ button.primary:disabled:hover {
     margin-top: 24px;
   }
 }
+
+@media (max-width: 900px) {
+  .page-actions {
+    position: sticky;
+    bottom: 0;
+    background: #111;
+    padding: 12px;
+    border-top: 1px solid #262626;
+    z-index: 10;
+  }
+}
+
+/* -------------------------------------------
+   Expand preview scroll container
+------------------------------------------- */
+
+.preview-scroll {
+  max-height: 60vh;
+  /* limit vertical size */
+  overflow-y: auto;
+  padding-right: 6px;
+  /* space for scrollbar */
+}
+
+/* Optional: smoother scrolling */
+.preview-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Grid layout stays unchanged */
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.group-header {
+  position: sticky;
+  top: 0;
+  background: var(--card-bg, #111);
+  z-index: 1;
+  padding: 6px 0;
+}
+
+/* -------------------------------------------
+   Preview hover zoom
+------------------------------------------- */
+
+.preview-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: zoom-in;
+}
+
+.preview-item:hover {
+  transform: scale(1.06);
+  z-index: 5;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  
+}
+
+
+/* Target media inside ContentPreviewView */
+.preview-item img,
+.preview-item video {
+  transition: transform 0.25s ease;
+  will-change: transform;
+}
+
+.preview-item:hover img,
+.preview-item:hover video {
+  transform: scale(1.08);
+}
+
+@media (hover: none) {
+  .preview-item:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+.remove-item {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 16px;
+  line-height: 20px;
+  cursor: pointer;
+  z-index: 10;
+  display: none;
+}
+
+.preview-item:hover .remove-item {
+  display: block;
+}
+
+.remove-item:hover {
+  background: rgba(220, 50, 50, 0.9);
+}
+
+/* -------------------------------------------
+   Duplicate preview indicator
+------------------------------------------- */
+
+.preview-item.duplicate {
+  opacity: 0.55;
+}
+
+.duplicate-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #ffd966;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  z-index: 12;
+}
