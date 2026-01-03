@@ -206,18 +206,20 @@ export default function ContentPage() {
       item.tags?.some((t) => selectedTags.has(t.id))
     );
   }, [visibleItems, selectedTags]);
-  
+
   useEffect(() => {
     setSelectedContentIds((prev) => {
-      const next = new Set(
-        [...prev].filter((id) =>
-          visibleItems.some((item) => item.id === id)
-        )
+      const filtered = [...prev].filter((id) =>
+        visibleItems.some((item) => item.id === id)
       );
-      return next;
+
+      if (filtered.length === prev.size) {
+        return prev;
+      }
+
+      return new Set(filtered);
     });
   }, [visibleItems]);
-
 
   function toggleFilter(tagId: string) {
     setSelectedTags((prev) => {

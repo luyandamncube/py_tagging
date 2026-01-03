@@ -6,16 +6,18 @@ import ContentPage from "./pages/ContentPage";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+      }}
+    >
       <Routes>
         <Route element={<Layout />}>
-          {/* <Route path="/" element={<Navigate to="/intake" replace />} /> */}
           <Route index element={<Navigate to="/intake" replace />} />
 
           <Route path="/intake" element={<BulkIntakePage />} />
           <Route path="/review" element={<ReviewPage />} />
           <Route path="/review/:contentId" element={<ReviewPage />} />
-
           <Route path="/content" element={<ContentPage />} />
         </Route>
       </Routes>

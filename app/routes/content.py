@@ -73,10 +73,7 @@ def get_next_content():
 
     row = con.execute(
         """
-        SELECT
-            id,
-            url,
-            created_at
+        SELECT id
         FROM content
         WHERE status != 'complete'
         ORDER BY created_at
@@ -87,12 +84,14 @@ def get_next_content():
     if not row:
         return None
 
-    return {
-        "id": row[0],
-        "url": row[1],
-        "created_at": row[2],
-    }
+    content_id = row[0]
 
+    snapshot = get_content_snapshot(content_id)
+
+    if snapshot is None:
+        return None
+
+    return snapshot
 
 # ------------------------------------------------------------------
 # COMPLETE / FINALISE CONTENT (STRICT)

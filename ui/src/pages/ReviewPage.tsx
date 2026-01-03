@@ -56,24 +56,6 @@ export default function ReviewPage() {
   // Load next item
   // --------------------------------------------------
 
-  // async function loadNext() {
-  //   setLoading(true);
-
-  //   try {
-  //     const res = await fetch(`${API_BASE}/content/next`);
-  //     if (!res.ok) {
-  //       setItem(null);
-  //       return;
-  //     }
-
-  //     const data = await res.json();
-  //     setItem(data);
-  //     setSelectedTagIds(data.tags?.map((t: any) => t.id) || []);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
-
   async function loadItem() {
     setLoading(true);
 
